@@ -1,17 +1,10 @@
 local addonName, addon = ...
-local ldbPVPToggle
-if (not addonName) or (not addon) then --Cold Boot with out header
-    addonName = "EdrikToolsPVPToggle" --Set Name
-    addon = {} --Set Main Table
-    _G[addonName] = addon --Push Main Table to _G
-    ldbPVPToggle = addon --Main Table as Module Table as this is cold boot.
-else
-    if _G[addonName] ~= addon then --Module Boot
-        _G[addonName] = addon --Push Addon in to _G if it's not already there.
-    end
-    ldbPVPToggle = {} --Create module Table
-    addon.ldbPVPToggle = ldbPVPToggle --attach to main.
+
+if _G[addonName] ~= addon then
+    _G[addonName] = addon
 end
+local ldbPVPToggle = {}
+addon.ldbPVPToggle = ldbPVPToggle
 
 local eventFrame = CreateFrame("Frame", nil, UIParent)
 ldbPVPToggle.eventFrame = eventFrame
