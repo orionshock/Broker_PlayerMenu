@@ -1,5 +1,5 @@
 ## Interface: 11302
-## Version: v1.0
+## Version: v1.1
 ## Author: Orionshock#1149
 ## Title: Broker_PlayerMenu
 ## Notes: Small Broker Plugins to replace common player menu settings.
