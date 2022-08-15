@@ -1,7 +1,15 @@
 --An LDB Feed to easily change loot methods and item quality
+local addonName, addon = ...
+
+if _G[addonName] ~= addon then
+    _G[addonName] = addon
+end
+
 local ldblootmethod = {} --Main Object--
+addon.ldblootmethod = ldblootmethod
 local LibQTip = LibStub("LibQTip-1.0")
 local eventFrame = CreateFrame("Frame", nil, UIParent)
+ldblootmethod.eventFrame = eventFrame
 
 --Reoccuring Elements--
 local currentLootMethod, currentLootThreshold, currentMasterLooterName, myTooltip

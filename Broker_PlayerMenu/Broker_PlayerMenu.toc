@@ -11,3 +11,4 @@ libs\LibDataBroker-1.1.lua
 
 LDBLootMethod.lua
 ldbPVPToggle.lua
+rezOptions.lua
