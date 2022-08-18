@@ -1,13 +1,18 @@
 externals:
     libs/LibStub:
-        url: svn://svn.wowace.com/wow/libstub/mainline/trunk
+        url: https://repos.wowace.com/wow/libstub/trunk
         tag: latest
+
     libs/CallbackHandler-1.0:
-        url: svn://svn.wowace.com/wow/callbackhandler/mainline/trunk/CallbackHandler-1.0
+        url: https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0
         tag: latest
+
     libs/LibQTip-1.0:
-        url: git://repos.wowace.com/wow/libqtip-1-0/mainline.git
-        tag: latest
+        url: https://repos.curseforge.com/wow/libqtip-1-0
+        #tag: latest
+        ## current latest tag are too old. latest commit aren't tagged.
+        commit: 4c6a3d882373fa0b52c6b71d09acc0b87ec1ae00
+
 tools-used:
     - libdatabroker-1-1
 
