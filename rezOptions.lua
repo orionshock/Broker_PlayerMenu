@@ -92,7 +92,7 @@ eventFrame:SetScript(
     "OnEvent",
     function(frame, event, ...)
         if (type(rezOptions[event]) == "function") then
-            print("rezOptions_event: ", event)
+            --print("rezOptions_event: ", event)
             rezOptions[event](rezOptions, event, ...)
         end
     end
