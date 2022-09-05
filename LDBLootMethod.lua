@@ -1,3 +1,11 @@
+--luacheck: globals LibStub CreateFrame LOOT LOOT_FREE_FOR_ALL LOOT_ROUND_ROBIN LOOT_NEED_BEFORE_GREED LOOT_GROUP_LOOT 
+--luacheck: globals DUNGEON_DIFFICULTY1 DUNGEON_DIFFICULTY2 SetLootMethod SetLootThreshold SetDungeonDifficultyID
+--luacheck: globals IsShiftKeyDown ResetInstances InviteUnit C_Timer LeaveParty InviteUnit ConvertToRaid ConvertToParty
+--luacheck: globals InCombatLockdown IsInRaid LOOT_METHOD LOOT_THRESHOLD ITEM_QUALITY_COLORS GetDungeonDifficultyID
+--luacheck: globals IsInInstance RESET_INSTANCES GameFontNormalLeft DUNGEON_DIFFICULTY LOOT_MASTER_LOOTER
+--luacheck: no max line length
+
+
 --An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
 
