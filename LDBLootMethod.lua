@@ -7,7 +7,6 @@
 --luacheck: globals GetLootMethod GetLootThreshold UnitInRaid UnitInParty GetRaidRosterInfo SOLO
 --luacheck: no max line length
 
-
 --An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
 
@@ -41,16 +40,36 @@ local loot_method_strings_short = {
     ["master"] = "ML"
 }
 
-local loot_method_sorted = {"freeforall", "roundrobin", "master", "group", "needbeforegreed"}
+local loot_method_sorted = {
+    "freeforall",
+    "group",
+    "master"
+}
 
 local Dungeon_Difficulty_Level = {DUNGEON_DIFFICULTY1, DUNGEON_DIFFICULTY2}
 local Dungeon_Difficulty_Short_Name = {"|cff20ff20N|r", "|cffff2020H|r"}
+
+--Functions Listed in order their used.
 
 local function tooltip_SetLootMethod(_, arg, button)
     if button == "LeftButton" then
         LibQTip:Release(myTooltip)
         myTooltip = nil
         SetLootMethod(loot_method_sorted[arg], currentMasterLooterName or "player", currentLootThreshold)
+    end
+end
+
+local function tooltip_GroupManageFunc(_, arg, button)
+    if button == "LeftButton" and IsShiftKeyDown() then
+        if arg == 1 then
+            ConvertToRaid()
+        elseif arg == 2 then
+            ConvertToParty()
+        elseif arg == 3 then
+            ResetInstances()
+        end
+        LibQTip:Release(myTooltip)
+        myTooltip = nil
     end
 end
 
@@ -76,8 +95,6 @@ end
 
 local function tooltip_ResetInstances()
     if IsShiftKeyDown() then
-        LibQTip:Release(myTooltip)
-        myTooltip = nil
         ResetInstances()
     end
 end
@@ -114,28 +131,31 @@ local function tooltip_LeaveParty()
 end
 
 local function populateTooltip_PartyLeader(tooltip)
-    if IsInRaid() then
-        local currentLine = tooltip:AddLine("Convert To Party (Shift-Click)")
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_ToParty)
-        tooltip:AddSeparator(8)
-    else
-        local currentLine = tooltip:AddLine("Convert To Raid (Shift-Click)")
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_ToRaid)
-        tooltip:AddSeparator(8)
-    end
+    tooltip:SetColumnLayout(2, "CENTER", "CENTER")
 
-    tooltip:AddHeader(LOOT_METHOD)
+    local tipLine, tipCol
+    tooltip:AddHeader(LOOT_METHOD, "Manage")
     tooltip:AddSeparator()
+    local groupManage_Sorted = {
+        [1] = IsInGroup() and not IsInRaid() and CONVERT_TO_RAID or nil,
+        [2] = IsInRaid() and CONVERT_TO_PARTY or nil,
+        [3] = not IsInInstance() and RESET_INSTANCES or nil
+    }
     for i = 1, #loot_method_sorted do
         local currentLine
         if currentLootMethod == loot_method_sorted[i] then
-            currentLine = tooltip:AddLine(">> " .. loot_method_strings[loot_method_sorted[i]] .. " <<")
+            currentLine = tooltip:AddLine(">> " .. loot_method_strings[loot_method_sorted[i]] .. " <<", groupManage_Sorted[i])
         else
-            currentLine = tooltip:AddLine(loot_method_strings[loot_method_sorted[i]])
+            currentLine = tooltip:AddLine(loot_method_strings[loot_method_sorted[i]], groupManage_Sorted[i])
         end
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_SetLootMethod, i)
+        tooltip:SetCellScript(currentLine, 1, "OnMouseUp", tooltip_SetLootMethod, i)
+        if groupManage_Sorted[i] then
+            tooltip:SetCellScript(currentLine, 2, "OnMouseUp", tooltip_GroupManageFunc, i)
+        end
     end
     tooltip:AddSeparator(8)
+    --[[
+
     tooltip:AddHeader(LOOT_THRESHOLD)
     tooltip:AddSeparator()
     local startQuality, maxQuality = 0, 8
@@ -173,6 +193,7 @@ local function populateTooltip_PartyLeader(tooltip)
     end
     local currentLine = tooltip:AddLine("Leave Party (Shift Click)")
     tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
+    ]]
 end
 
 local function populateTooltip_PartyMember(tooltip)
