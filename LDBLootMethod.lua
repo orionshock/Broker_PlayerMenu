@@ -1,11 +1,13 @@
+--luacheck: no max line length
 --luacheck: globals LibStub CreateFrame LOOT LOOT_FREE_FOR_ALL LOOT_ROUND_ROBIN LOOT_NEED_BEFORE_GREED LOOT_GROUP_LOOT
 --luacheck: globals DUNGEON_DIFFICULTY1 DUNGEON_DIFFICULTY2 SetLootMethod SetLootThreshold SetDungeonDifficultyID
 --luacheck: globals IsShiftKeyDown ResetInstances InviteUnit C_Timer LeaveParty InviteUnit ConvertToRaid ConvertToParty
 --luacheck: globals InCombatLockdown IsInRaid LOOT_METHOD LOOT_THRESHOLD ITEM_QUALITY_COLORS GetDungeonDifficultyID
 --luacheck: globals IsInInstance RESET_INSTANCES GameFontNormalLeft DUNGEON_DIFFICULTY LOOT_MASTER_LOOTER
 --luacheck: globals UIParent UnitClass RAID_CLASS_COLORS UnitIsGroupLeader IsInGroup GetOptOutOfLoot SetOptOutOfLoot
---luacheck: globals GetLootMethod GetLootThreshold UnitInRaid UnitInParty GetRaidRosterInfo SOLO
---luacheck: no max line length
+--luacheck: globals GetLootMethod GetLootThreshold UnitInRaid UnitInParty GetRaidRosterInfo SOLO RAID_DIFFICULTY1 RAID_DIFFICULTY2
+--luacheck: globals SetRaidDifficultyID CONVERT_TO_RAID CONVERT_TO_PARTY RAID_DIFFICULTY GetRaidDifficultyID
+
 
 --An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
@@ -143,7 +145,7 @@ end
 local function populateTooltip_PartyLeader(tooltip)
     tooltip:SetColumnLayout(2, "CENTER", "CENTER")
 
-    local tipLine, tipCol
+    local tipLine
     tooltip:AddHeader(LOOT_METHOD, "Manage")
     tooltip:AddSeparator()
     local groupManage_Sorted = {
@@ -171,7 +173,7 @@ local function populateTooltip_PartyLeader(tooltip)
     tooltip:SetColumnLayout(2, "CENTER", "CENTER")
     tooltip:AddSeparator()
     tooltip:AddLine("2", "4")
-    tipLine, tipCol = tooltip:AddLine("3", "5")
+    tipLine = tooltip:AddLine("3", "5")
     local matrix = {
         [2] = {tipLine - 1, 1}, --2
         [3] = {tipLine, 1}, --3
@@ -219,27 +221,6 @@ local function populateTooltip_PartyLeader(tooltip)
     elseif currentRaidDifficulty == 4 then
         tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. Raid_Difficulty_Level[4] .. " <<")
     end
-
-    --[[
-    local currentDungeonDifficulty = GetDungeonDifficultyID()
-    for index = 1, #Dungeon_Difficulty_Level do
-        local currentLine
-        if index == currentDungeonDifficulty then
-            currentLine = tooltip:AddLine(">> " .. Dungeon_Difficulty_Level[index] .. " <<")
-        else
-            currentLine = tooltip:AddLine(Dungeon_Difficulty_Level[index])
-        end
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_SetDungeonDifficultyID, index)
-    end
-    tooltip:AddSeparator(4)
-    local inInstance = IsInInstance()
-    if not inInstance then
-        local currentLine = tooltip:AddLine(RESET_INSTANCES .. " (Shift Click)")
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_ResetInstances)
-    end
-    local currentLine = tooltip:AddLine("Leave Party (Shift Click)")
-    tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
-    ]]
 end
 
 local function populateTooltip_PartyMember(tooltip)
