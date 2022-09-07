@@ -8,7 +8,6 @@
 --luacheck: globals GetLootMethod GetLootThreshold UnitInRaid UnitInParty GetRaidRosterInfo SOLO RAID_DIFFICULTY1 RAID_DIFFICULTY2
 --luacheck: globals SetRaidDifficultyID CONVERT_TO_RAID CONVERT_TO_PARTY RAID_DIFFICULTY GetRaidDifficultyID
 
-
 --An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
 
@@ -195,18 +194,18 @@ local function populateTooltip_PartyLeader(tooltip)
     tooltip:AddSeparator(8)
     tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
     tooltip:AddSeparator()
----
+    ---
     local normalTenLine = tooltip:AddLine("n", "10")
     tooltip:SetCell(normalTenLine, 1, Dungeon_Difficulty_Level[1])
-    tooltip:SetCellScript( normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
+    tooltip:SetCellScript(normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
     tooltip:SetCell(normalTenLine, 2, Raid_Difficulty_Level[3])
-    tooltip:SetCellScript( normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
----
+    tooltip:SetCellScript(normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
+    ---
     local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
     tooltip:SetCell(heroicTwentyFiveLine, 1, Dungeon_Difficulty_Level[2])
-    tooltip:SetCellScript( heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+    tooltip:SetCellScript(heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
     tooltip:SetCell(heroicTwentyFiveLine, 2, Raid_Difficulty_Level[4])
-    tooltip:SetCellScript( heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
+    tooltip:SetCellScript(heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
 
     local currentDungeonDifficulty = GetDungeonDifficultyID()
     if currentDungeonDifficulty == 1 then
@@ -307,18 +306,32 @@ local function LootMethod_OnEnter(self)
     tooltip:Show()
 end
 
-local fmt_Loot_String = "[%s] %s (%s)%s" --[InstanceDifficulty] Loot Method (LootThreshold) OptOutFlag
-local fmt_Loot_ML_String = "[%s] %s: %s (%s)%s" --[InstanceDifficulty] ML: MasterLooter_Name (LootThreshold) OptOutFlag
+local fmt_Loot_String = "[%s%s] %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] Loot Method (LootThreshold) OptOutFlag
+local fmt_Loot_ML_String = "[%s%s] %s: %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] ML: MasterLooter_Name (LootThreshold) OptOutFlag
 
 local function get_LDB_Text(mlName, class)
     local loot_method = loot_method_strings_short[currentLootMethod]
     local loot_threshold = ITEM_QUALITY_COLORS[currentLootThreshold].color:WrapTextInColorCode(_G["ITEM_QUALITY" .. currentLootThreshold .. "_DESC"]:sub(1, 1))
     local optOut = GetOptOutOfLoot() and "*" or ""
-    local difficultyID = GetDungeonDifficultyID()
+    local dungeonDifficultyID = GetDungeonDifficultyID()
+    local raidDifficultyID = GetRaidDifficultyID()
     if mlName then
-        return fmt_Loot_ML_String:format(Dungeon_Difficulty_Short_Name[difficultyID] or "?", loot_method, RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName), loot_threshold, optOut)
+        return fmt_Loot_ML_String:format(
+            Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?",
+            Raid_Difficulty_Short_Name[raidDifficultyID] or "¿",
+            loot_method,
+            RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName),
+            loot_threshold,
+            optOut
+            )
     else
-        return fmt_Loot_String:format(Dungeon_Difficulty_Short_Name[difficultyID] or "?", loot_method, loot_threshold, optOut)
+        return fmt_Loot_String:format(
+            Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?",
+            Raid_Difficulty_Short_Name[raidDifficultyID] or "¿",
+            loot_method,
+            loot_threshold,
+            optOut
+            )
     end
 end
 
