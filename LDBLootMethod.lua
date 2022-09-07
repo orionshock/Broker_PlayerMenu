@@ -127,6 +127,12 @@ local function tooltip_ResetInstances()
     end
 end
 
+local function tooltip_LeaveParty()
+    if not InCombatLockdown() and IsShiftKeyDown() then
+        LeaveParty()
+    end
+end
+
 local function tooltip_GhettoHearth()
     if not InCombatLockdown() then
         InviteUnit("a")
@@ -220,6 +226,12 @@ local function populateTooltip_PartyLeader(tooltip)
     elseif currentRaidDifficulty == 4 then
         tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. Raid_Difficulty_Level[4] .. " <<")
     end
+
+    tooltip:AddSeparator(8)
+
+    local currentLine = tooltip:AddLine(1)
+    tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
+    tooltip:SetCell(currentLine, 1, "Leave Party (Shift Click)", nil, "CENTER", 2)
 end
 
 local function populateTooltip_PartyMember(tooltip)
@@ -323,15 +335,13 @@ local function get_LDB_Text(mlName, class)
             RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName),
             loot_threshold,
             optOut
-            )
+        )
     else
         return fmt_Loot_String:format(
             Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?",
             Raid_Difficulty_Short_Name[raidDifficultyID] or "¿",
-            loot_method,
-            loot_threshold,
-            optOut
-            )
+            loot_method, loot_threshold, optOut
+        )
     end
 end
 
