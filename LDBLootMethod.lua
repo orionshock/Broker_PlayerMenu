@@ -46,8 +46,27 @@ local loot_method_sorted = {
     "master"
 }
 
-local Dungeon_Difficulty_Level = {DUNGEON_DIFFICULTY1, DUNGEON_DIFFICULTY2}
-local Dungeon_Difficulty_Short_Name = {"|cff20ff20N|r", "|cffff2020H|r"}
+local Dungeon_Difficulty_Level = {
+    DUNGEON_DIFFICULTY1,
+    DUNGEON_DIFFICULTY2
+}
+
+local Dungeon_Difficulty_Short_Name = {
+    "|cff20ff20N|r",
+    "|cffff2020H|r"
+}
+local Raid_Difficulty_Level = {
+    nil,
+    nil,
+    RAID_DIFFICULTY1,
+    RAID_DIFFICULTY2
+}
+local Raid_Difficulty_Short_Name = {
+    nil,
+    nil,
+    "|cff20ff2010|r",
+    "|cffff202025|r"
+}
 
 --Functions Listed in order their used.
 
@@ -93,6 +112,14 @@ local function tooltip_SetDungeonDifficultyID(_, arg, button)
     end
 end
 
+local function tooltip_SetRaidDifficultyID(_, arg, button)
+    if button == "LeftButton" then
+        LibQTip:Release(myTooltip)
+        myTooltip = nil
+        SetRaidDifficultyID(arg)
+    end
+end
+
 local function tooltip_ResetInstances()
     if IsShiftKeyDown() then
         ResetInstances()
@@ -110,23 +137,6 @@ local function tooltip_GhettoRaid()
     if IsShiftKeyDown() then
         InviteUnit("a")
         C_Timer.After(1, ConvertToRaid)
-    end
-end
-local function tooltip_ToRaid()
-    if IsShiftKeyDown() then
-        ConvertToRaid()
-    end
-end
-
-local function tooltip_ToParty()
-    if IsShiftKeyDown() then
-        ConvertToParty()
-    end
-end
-
-local function tooltip_LeaveParty()
-    if not InCombatLockdown() and IsShiftKeyDown() then
-        LeaveParty()
     end
 end
 
@@ -153,28 +163,64 @@ local function populateTooltip_PartyLeader(tooltip)
             tooltip:SetCellScript(currentLine, 2, "OnMouseUp", tooltip_GroupManageFunc, i)
         end
     end
-    tooltip:AddSeparator(8)
-    --[[
 
-    tooltip:AddHeader(LOOT_THRESHOLD)
-    tooltip:AddSeparator()
-    local startQuality, maxQuality = 0, 8
-    if currentLootMethod ~= "master" then
-        startQuality = 2
-        maxQuality = 6
-    end
-    for qualityIndex = startQuality, maxQuality do
-        local currentLine
-        if currentLootThreshold == qualityIndex then
-            currentLine = tooltip:AddLine(">> " .. ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G["ITEM_QUALITY" .. qualityIndex .. "_DESC"]) .. " <<")
-        else
-            currentLine = tooltip:AddLine(ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G["ITEM_QUALITY" .. qualityIndex .. "_DESC"]))
-        end
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_SetLootThreshold, qualityIndex)
-    end
     tooltip:AddSeparator(8)
-    tooltip:AddHeader(DUNGEON_DIFFICULTY)
+
+    tipLine = tooltip:AddHeader(LOOT_THRESHOLD, "")
+    tooltip:SetCell(tipLine, 1, LOOT_THRESHOLD, nil, "CENTER", 2)
+    tooltip:SetColumnLayout(2, "CENTER", "CENTER")
     tooltip:AddSeparator()
+    tooltip:AddLine("2", "4")
+    tipLine, tipCol = tooltip:AddLine("3", "5")
+    local matrix = {
+        [2] = {tipLine - 1, 1}, --2
+        [3] = {tipLine, 1}, --3
+        [4] = {tipLine - 1, 2}, --4
+        [5] = {tipLine, 2} --5
+    }
+
+    for qualityIndex, data in pairs(matrix) do
+        if data then
+            if currentLootThreshold == qualityIndex then
+                tooltip:SetCell(data[1], data[2], ">> " .. ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G["ITEM_QUALITY" .. qualityIndex .. "_DESC"]) .. " <<")
+            else
+                tooltip:SetCell(data[1], data[2], ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G["ITEM_QUALITY" .. qualityIndex .. "_DESC"]))
+            end
+            tooltip:SetCellScript(data[1], data[2], "OnMouseUp", tooltip_SetLootThreshold, qualityIndex)
+        end
+    end
+
+    tooltip:AddSeparator(8)
+    tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
+    tooltip:AddSeparator()
+---
+    local normalTenLine = tooltip:AddLine("n", "10")
+    tooltip:SetCell(normalTenLine, 1, Dungeon_Difficulty_Level[1])
+    tooltip:SetCellScript( normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
+    tooltip:SetCell(normalTenLine, 2, Raid_Difficulty_Level[3])
+    tooltip:SetCellScript( normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
+---
+    local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
+    tooltip:SetCell(heroicTwentyFiveLine, 1, Dungeon_Difficulty_Level[2])
+    tooltip:SetCellScript( heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+    tooltip:SetCell(heroicTwentyFiveLine, 2, Raid_Difficulty_Level[4])
+    tooltip:SetCellScript( heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
+
+    local currentDungeonDifficulty = GetDungeonDifficultyID()
+    if currentDungeonDifficulty == 1 then
+        tooltip:SetCell(normalTenLine, 1, ">> " .. Dungeon_Difficulty_Level[1] .. " <<")
+    elseif currentDungeonDifficulty == 2 then
+        tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. Dungeon_Difficulty_Level[2] .. " <<")
+    end
+
+    local currentRaidDifficulty = GetRaidDifficultyID()
+    if currentRaidDifficulty == 3 then
+        tooltip:SetCell(normalTenLine, 2, ">> " .. Raid_Difficulty_Level[3] .. " <<")
+    elseif currentRaidDifficulty == 4 then
+        tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. Raid_Difficulty_Level[4] .. " <<")
+    end
+
+    --[[
     local currentDungeonDifficulty = GetDungeonDifficultyID()
     for index = 1, #Dungeon_Difficulty_Level do
         local currentLine
