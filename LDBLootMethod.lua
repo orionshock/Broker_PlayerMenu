@@ -6,7 +6,7 @@
 --luacheck: globals IsInInstance RESET_INSTANCES GameFontNormalLeft DUNGEON_DIFFICULTY LOOT_MASTER_LOOTER
 --luacheck: globals UIParent UnitClass RAID_CLASS_COLORS UnitIsGroupLeader IsInGroup GetOptOutOfLoot SetOptOutOfLoot
 --luacheck: globals GetLootMethod GetLootThreshold UnitInRaid UnitInParty GetRaidRosterInfo SOLO RAID_DIFFICULTY1 RAID_DIFFICULTY2
---luacheck: globals SetRaidDifficultyID CONVERT_TO_RAID CONVERT_TO_PARTY RAID_DIFFICULTY GetRaidDifficultyID
+--luacheck: globals SetRaidDifficultyID CONVERT_TO_RAID CONVERT_TO_PARTY RAID_DIFFICULTY GetRaidDifficultyID PARTY_LEAVE
 
 --An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
@@ -231,7 +231,7 @@ local function populateTooltip_PartyLeader(tooltip)
 
     local currentLine = tooltip:AddLine(1)
     tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
-    tooltip:SetCell(currentLine, 1, "Leave Party (Shift Click)", nil, "CENTER", 2)
+    tooltip:SetCell(currentLine, 1, PARTY_LEAVE, nil, "CENTER", 2)
 end
 
 local function populateTooltip_PartyMember(tooltip)
@@ -255,36 +255,55 @@ local function populateTooltip_PartyMember(tooltip)
     tooltip:AddSeparator()
     local currentLine = tooltip:AddLine("Leave Party", "(Shift Click)")
     tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
+    tooltip:SetCell(currentLine, 1, PARTY_LEAVE, nil, "CENTER", 2)
 end
 
 local function populateTooltip_Solo(tooltip)
+    tooltip:SetColumnLayout(2, "CENTER", "CENTER")
+
     local inInstance = IsInInstance()
     if not inInstance then --Solo and Outside of an instance
         --
-        tooltip:AddHeader(DUNGEON_DIFFICULTY)
+        tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
         tooltip:AddSeparator()
+        ---
+        local normalTenLine = tooltip:AddLine("n", "10")
+        tooltip:SetCell(normalTenLine, 1, Dungeon_Difficulty_Level[1])
+        tooltip:SetCellScript(normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
+        tooltip:SetCell(normalTenLine, 2, Raid_Difficulty_Level[3])
+        tooltip:SetCellScript(normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
+        ---
+        local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
+        tooltip:SetCell(heroicTwentyFiveLine, 1, Dungeon_Difficulty_Level[2])
+        tooltip:SetCellScript(heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+        tooltip:SetCell(heroicTwentyFiveLine, 2, Raid_Difficulty_Level[4])
+        tooltip:SetCellScript(heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
+
         local currentDungeonDifficulty = GetDungeonDifficultyID()
-        for index = 1, #Dungeon_Difficulty_Level do
-            local currentLine
-            if index == currentDungeonDifficulty then
-                currentLine = tooltip:AddLine(">> " .. Dungeon_Difficulty_Level[index] .. " <<")
-            else
-                currentLine = tooltip:AddLine(Dungeon_Difficulty_Level[index])
-            end
-            tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_SetDungeonDifficultyID, index)
+        if currentDungeonDifficulty == 1 then
+            tooltip:SetCell(normalTenLine, 1, ">> " .. Dungeon_Difficulty_Level[1] .. " <<")
+        elseif currentDungeonDifficulty == 2 then
+            tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. Dungeon_Difficulty_Level[2] .. " <<")
         end
+
+        local currentRaidDifficulty = GetRaidDifficultyID()
+        if currentRaidDifficulty == 3 then
+            tooltip:SetCell(normalTenLine, 2, ">> " .. Raid_Difficulty_Level[3] .. " <<")
+        elseif currentRaidDifficulty == 4 then
+            tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. Raid_Difficulty_Level[4] .. " <<")
+        end
+
         tooltip:AddSeparator(8)
-        --Instance Reset
-        local currentLine = tooltip:AddLine(RESET_INSTANCES .. " (Shift Click)")
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_ResetInstances)
-        tooltip:AddSeparator(2)
-        --Ghetto Raid
-        currentLine = tooltip:AddLine("Ghetto Raid (Shift-Click)")
-        tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_GhettoRaid)
-        tooltip:AddSeparator(2)
+        --Instance Reset / Ghetto Raid
+        local currentLine = tooltip:AddLine(RESET_INSTANCES, "Ghetto Raid")
+        tooltip:SetCellScript(currentLine,1, "OnMouseUp", tooltip_ResetInstances)
+        tooltip:SetCellScript(currentLine,2, "OnMouseUp", tooltip_GhettoRaid)
+        tooltip:AddSeparator(1)
         --
-        currentLine = tooltip:AddLine("Leave Party (Shift Click)")
+        currentLine = tooltip:AddLine("Leave")
+        tooltip:SetCell(currentLine, 1, PARTY_LEAVE, nil, "CENTER", 2)
         tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
+
     else --Solo and inside the instance -- so ghetto hearth option.
         local currentLine = tooltip:AddLine("Ghetto Hearth")
         tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_GhettoHearth)
