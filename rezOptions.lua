@@ -109,5 +109,22 @@ function rezOptions:CORPSE_OUT_OF_RANGE(event)
     corpseInRange = false
 end
 function rezOptions:PLAYER_DEAD(event)
-
+    eventFrame:Show()
 end
+function rezOptions:PLAYER_ALIVE(event)
+    eventFrame:Hide()
+end
+
+eventFrame.interval = 0
+eventFrame:SetScript("OnUpdate", function(self, elapsed)
+    self.interval = self.interval + elapsed
+    if GetReleaseTimeRemaining() then
+        if self.interval > 1 then
+            ldbObject.text = SecondsToTime(GetReleaseTimeRemaining())
+            self.interval = 0
+        end
+    else
+        ldbObject.text = ""
+        self:Hide()
+    end
+end)

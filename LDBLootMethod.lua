@@ -237,7 +237,8 @@ end
 local function populateTooltip_PartyMember(tooltip)
     tooltip:SetColumnLayout(2, "RIGHT", "LEFT")
     tooltip:SetColumnTextColor(1, GameFontNormalLeft:GetTextColor())
-    tooltip:AddLine(DUNGEON_DIFFICULTY, Dungeon_Difficulty_Level[GetDungeonDifficultyID()])
+    tooltip:AddLine(DUNGEON_DIFFICULTY, Dungeon_Difficulty_Level[GetDungeonDifficultyID()] or "??")
+    tooltip:AddLine(RAID_DIFFICULTY, Raid_Difficulty_Level[ GetRaidDifficultyID() ] or "¿¿")
     tooltip:AddSeparator()
     --currentLootMethod, currentLootThreshold, currentMasterLooterName
     tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod])
@@ -295,9 +296,9 @@ local function populateTooltip_Solo(tooltip)
 
         tooltip:AddSeparator(8)
         --Instance Reset / Ghetto Raid
-        local currentLine = tooltip:AddLine(RESET_INSTANCES, "Ghetto Raid")
+        local currentLine = tooltip:AddLine(RESET_INSTANCES, "(Shift Click alot)")
         tooltip:SetCellScript(currentLine,1, "OnMouseUp", tooltip_ResetInstances)
-        tooltip:SetCellScript(currentLine,2, "OnMouseUp", tooltip_GhettoRaid)
+        --tooltip:SetCellScript(currentLine,2, "OnMouseUp", tooltip_GhettoRaid)
         tooltip:AddSeparator(1)
         --
         currentLine = tooltip:AddLine("Leave")
