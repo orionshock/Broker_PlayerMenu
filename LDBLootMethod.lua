@@ -264,6 +264,9 @@ local function populateTooltip_Solo(tooltip)
 
     local inInstance = IsInInstance()
     if not inInstance then --Solo and Outside of an instance
+        local tipLine = tooltip:AddLine("Ghetto Hearth", "Ghetto Raid")
+        tooltip:SetCellScript(tipLine,1, "OnMouseUp", tooltip_GhettoHearth )
+        tooltip:SetCellScript(tipLine,2, "OnMouseUp", tooltip_GhettoRaid)
         --
         tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
         tooltip:AddSeparator()
