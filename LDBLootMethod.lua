@@ -60,13 +60,17 @@ local Raid_Difficulty_Level = {
     nil,
     nil,
     RAID_DIFFICULTY1,
-    RAID_DIFFICULTY2
+    RAID_DIFFICULTY2,
+    [9] = "40 Player",
+    [148] = "20 Player",
 }
 local Raid_Difficulty_Short_Name = {
     nil,
     nil,
-    "|cff20ff2010|r",
-    "|cffff202025|r"
+    "|cff20ff2010|r",   --Green
+    "|cffff202025|r",   --Red
+    [9] = "|cff0070dd40|r", --Blue is for Old World / Not 10/25
+    [148] = "|cff0070dd20|r", --Blue is for Old World / Not 10/25
 }
 
 --Functions Listed in order their used.
