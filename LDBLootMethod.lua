@@ -62,6 +62,7 @@ local Raid_Difficulty_Level = {
     RAID_DIFFICULTY1,
     RAID_DIFFICULTY2,
     [9] = "40 Player",
+    [14] = "Just a Raid",
     [148] = "20 Player",
 }
 local Raid_Difficulty_Short_Name = {
@@ -70,6 +71,7 @@ local Raid_Difficulty_Short_Name = {
     "|cff20ff2010|r",   --Green
     "|cffff202025|r",   --Red
     [9] = "|cff0070dd40|r", --Blue is for Old World / Not 10/25
+    [14] = "|cff0070ddR|r",
     [148] = "|cff0070dd20|r", --Blue is for Old World / Not 10/25
 }
 
