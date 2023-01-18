@@ -142,14 +142,14 @@ end
 local function tooltip_GhettoHearth()
     if not InCombatLockdown() then
         InviteUnit("a")
-        C_Timer.After(1, LeaveParty)
+        C_Timer.After(1, function() LeaveParty() end)
     end
 end
 
 local function tooltip_GhettoRaid()
     if IsShiftKeyDown() then
-        InviteUnit("a")
-        C_Timer.After(1, ConvertToRaid)
+        InviteUnit("a");
+        C_Timer.After(1, function() ConvertToRaid() end)
     end
 end
 
