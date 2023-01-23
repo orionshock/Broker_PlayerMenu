@@ -63,16 +63,16 @@ local Raid_Difficulty_Level = {
     RAID_DIFFICULTY2,
     [9] = "40 Player",
     [14] = "Just a Raid",
-    [148] = "20 Player",
+    [148] = "20 Player"
 }
 local Raid_Difficulty_Short_Name = {
     nil,
     nil,
-    "|cff20ff2010|r",   --Green
-    "|cffff202025|r",   --Red
+    "|cff20ff2010|r", --Green
+    "|cffff202025|r", --Red
     [9] = "|cff0070dd40|r", --Blue is for Old World / Not 10/25
     [14] = "|cff0070ddR|r",
-    [148] = "|cff0070dd20|r", --Blue is for Old World / Not 10/25
+    [148] = "|cff0070dd20|r" --Blue is for Old World / Not 10/25
 }
 
 --Functions Listed in order their used.
@@ -142,14 +142,24 @@ end
 local function tooltip_GhettoHearth()
     if not InCombatLockdown() then
         InviteUnit("a")
-        C_Timer.After(1, function() LeaveParty() end)
+        C_Timer.After(
+            1,
+            function()
+                LeaveParty()
+            end
+        )
     end
 end
 
 local function tooltip_GhettoRaid()
     if IsShiftKeyDown() then
-        InviteUnit("a");
-        C_Timer.After(1, function() ConvertToRaid() end)
+        InviteUnit("a")
+        C_Timer.After(
+            1,
+            function()
+                ConvertToRaid()
+            end
+        )
     end
 end
 
@@ -244,7 +254,7 @@ local function populateTooltip_PartyMember(tooltip)
     tooltip:SetColumnLayout(2, "RIGHT", "LEFT")
     tooltip:SetColumnTextColor(1, GameFontNormalLeft:GetTextColor())
     tooltip:AddLine(DUNGEON_DIFFICULTY, Dungeon_Difficulty_Level[GetDungeonDifficultyID()] or "??")
-    tooltip:AddLine(RAID_DIFFICULTY, Raid_Difficulty_Level[ GetRaidDifficultyID() ] or "¿¿")
+    tooltip:AddLine(RAID_DIFFICULTY, Raid_Difficulty_Level[GetRaidDifficultyID()] or "¿¿")
     tooltip:AddSeparator()
     --currentLootMethod, currentLootThreshold, currentMasterLooterName
     tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod])
@@ -271,8 +281,8 @@ local function populateTooltip_Solo(tooltip)
     local inInstance = IsInInstance()
     if not inInstance then --Solo and Outside of an instance
         local tipLine = tooltip:AddLine("Ghetto Hearth", "Ghetto Raid")
-        tooltip:SetCellScript(tipLine,1, "OnMouseUp", tooltip_GhettoHearth )
-        tooltip:SetCellScript(tipLine,2, "OnMouseUp", tooltip_GhettoRaid)
+        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_GhettoHearth)
+        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_GhettoRaid)
         --
         tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
         tooltip:AddSeparator()
@@ -306,14 +316,13 @@ local function populateTooltip_Solo(tooltip)
         tooltip:AddSeparator(8)
         --Instance Reset / Ghetto Raid
         local currentLine = tooltip:AddLine(RESET_INSTANCES, "(Shift Click alot)")
-        tooltip:SetCellScript(currentLine,1, "OnMouseUp", tooltip_ResetInstances)
+        tooltip:SetCellScript(currentLine, 1, "OnMouseUp", tooltip_ResetInstances)
         --tooltip:SetCellScript(currentLine,2, "OnMouseUp", tooltip_GhettoRaid)
         tooltip:AddSeparator(1)
         --
         currentLine = tooltip:AddLine("Leave")
         tooltip:SetCell(currentLine, 1, PARTY_LEAVE, nil, "CENTER", 2)
         tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_LeaveParty)
-
     else --Solo and inside the instance -- so ghetto hearth option.
         local currentLine = tooltip:AddLine("Ghetto Hearth")
         tooltip:SetLineScript(currentLine, "OnMouseUp", tooltip_GhettoHearth)
@@ -366,17 +375,12 @@ local function get_LDB_Text(mlName, class)
             optOut
         )
     else
-        return fmt_Loot_String:format(
-            Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?",
-            Raid_Difficulty_Short_Name[raidDifficultyID] or "¿",
-            loot_method, loot_threshold, optOut
-        )
+        return fmt_Loot_String:format(Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?", Raid_Difficulty_Short_Name[raidDifficultyID] or "¿", loot_method, loot_threshold, optOut)
     end
 end
 
 local ldbObject = {
     type = "data source",
-    --	text = get_LDB_Text(),
     label = "LootMethod",
     icon = "133785", --"inv_misc_coin_02"
     OnEnter = LootMethod_OnEnter
@@ -390,11 +394,20 @@ eventFrame:RegisterEvent("GROUP_JOINED")
 eventFrame:RegisterEvent("GROUP_LEFT")
 eventFrame:RegisterEvent("CHAT_MSG_SYSTEM")
 
+eventFrame:RegisterEvent("INSTANCE_BOOT_START")
+eventFrame:RegisterEvent("INSTANCE_BOOT_STOP")
+
 eventFrame:SetScript(
     "OnEvent",
-    function(_, event)
+    function(self, event)
         if event == "RightButton" then
             SetOptOutOfLoot(not GetOptOutOfLoot())
+        end
+        if (event == "INSTANCE_BOOT_START") then
+            self:Show()
+            return
+        elseif (event == "INSTANCE_BOOT_STOP") then
+            self:Hide()
         end
         if IsInRaid() or IsInGroup() then
             currentLootMethod = GetLootMethod() or "group"
@@ -425,3 +438,20 @@ eventFrame:SetScript(
 )
 
 ldbObject.OnClick = eventFrame:GetScript("OnEvent")
+
+local timeElapsed = 0
+eventFrame:SetScript(
+    "OnUpdate",
+    function(self, elapsed)
+        timeElapsed = timeElapsed + elapsed
+        if timeElapsed > 1 then
+            timeElapsed = 0
+            local bootTime = GetInstanceBootTimeRemaining()
+            if bootTime == 0 then
+                self:Hide()
+            else
+                ldbObject.text = string.format("Boot: %s", bootTime)
+            end
+        end
+    end
+)
