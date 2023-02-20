@@ -47,32 +47,39 @@ local loot_method_sorted = {
     "master"
 }
 
-local Dungeon_Difficulty_Level = {
-    DUNGEON_DIFFICULTY1,
-    DUNGEON_DIFFICULTY2
+local RaidOrDungeonDifficultyLevel = {
+    [001] = DUNGEON_DIFFICULTY1,
+    [002] = DUNGEON_DIFFICULTY2,
+    [003] = RAID_DIFFICULTY1,
+    [004] = RAID_DIFFICULTY2,
+    [005] = RAID_DIFFICULTY3,
+    [006] = RAID_DIFFICULTY4,
+    [009] = "40 Player",
+    [014] = "Just a Raid",
+    [148] = "20 Player",
+    [173] = DUNGEON_DIFFICULTY1,
+    [174] = DUNGEON_DIFFICULTY2,
+    [175] = RAID_DIFFICULTY1,
+    [176] = RAID_DIFFICULTY2,
+    [193] = RAID_DIFFICULTY3,
+    [194] = RAID_DIFFICULTY4
 }
-
-local Dungeon_Difficulty_Short_Name = {
-    "|cff20ff20N|r",
-    "|cffff2020H|r"
-}
-local Raid_Difficulty_Level = {
-    nil,
-    nil,
-    RAID_DIFFICULTY1,
-    RAID_DIFFICULTY2,
-    [9] = "40 Player",
-    [14] = "Just a Raid",
-    [148] = "20 Player"
-}
-local Raid_Difficulty_Short_Name = {
-    nil,
-    nil,
-    "|cff20ff2010|r", --Green
-    "|cffff202025|r", --Red
-    [9] = "|cff0070dd40|r", --Blue is for Old World / Not 10/25
-    [14] = "|cff0070ddR|r",
-    [148] = "|cff0070dd20|r" --Blue is for Old World / Not 10/25
+local RaidOrDungeonDifficultyShortName = {
+    [001] = "|cff20ff20N|r", --Green, Normal Mode
+    [002] = "|cffff2020H|r", --Red, Heroic
+    [003] = "|cff20ff2010|r", --Green
+    [004] = "|cffff202025|r", --Red
+    [005] = "|cff20ff2010|r", --Green
+    [006] = "|cffff202025|r", --Red
+    [009] = "|cff0070dd40|r", --Blue is for Old World / Not 10/25
+    [014] = "|cff0070ddJR|r", --Blue/Old World - Just a Raid
+    [148] = "|cff0070dd20|r", --Blue/Old World - 20Man
+    [173] = "|cff20ff20N|r", --Green, Normal Mode
+    [174] = "|cffff2020H|r", --Red, Heroic
+    [175] = "|cff20ff2010|r", --Green
+    [176] = "|cffff202025|r", --Red
+    [193] = "|cff20ff2010|r", --Green
+    [194] = "|cffff202025|r" --Red
 }
 
 --Functions Listed in order their used.
@@ -218,29 +225,29 @@ local function populateTooltip_PartyLeader(tooltip)
     tooltip:AddSeparator()
     ---
     local normalTenLine = tooltip:AddLine("n", "10")
-    tooltip:SetCell(normalTenLine, 1, Dungeon_Difficulty_Level[1])
+    tooltip:SetCell(normalTenLine, 1, RaidOrDungeonDifficultyLevel[1])
     tooltip:SetCellScript(normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
-    tooltip:SetCell(normalTenLine, 2, Raid_Difficulty_Level[3])
+    tooltip:SetCell(normalTenLine, 2, RaidOrDungeonDifficultyLevel[3])
     tooltip:SetCellScript(normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
     ---
     local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
-    tooltip:SetCell(heroicTwentyFiveLine, 1, Dungeon_Difficulty_Level[2])
+    tooltip:SetCell(heroicTwentyFiveLine, 1, RaidOrDungeonDifficultyLevel[2])
     tooltip:SetCellScript(heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
-    tooltip:SetCell(heroicTwentyFiveLine, 2, Raid_Difficulty_Level[4])
+    tooltip:SetCell(heroicTwentyFiveLine, 2, RaidOrDungeonDifficultyLevel[4])
     tooltip:SetCellScript(heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
 
     local currentDungeonDifficulty = GetDungeonDifficultyID()
     if currentDungeonDifficulty == 1 then
-        tooltip:SetCell(normalTenLine, 1, ">> " .. Dungeon_Difficulty_Level[1] .. " <<")
+        tooltip:SetCell(normalTenLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[1] .. " <<")
     elseif currentDungeonDifficulty == 2 then
-        tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. Dungeon_Difficulty_Level[2] .. " <<")
+        tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[2] .. " <<")
     end
 
     local currentRaidDifficulty = GetRaidDifficultyID()
     if currentRaidDifficulty == 3 then
-        tooltip:SetCell(normalTenLine, 2, ">> " .. Raid_Difficulty_Level[3] .. " <<")
+        tooltip:SetCell(normalTenLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[3] .. " <<")
     elseif currentRaidDifficulty == 4 then
-        tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. Raid_Difficulty_Level[4] .. " <<")
+        tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[4] .. " <<")
     end
 
     tooltip:AddSeparator(8)
@@ -253,8 +260,8 @@ end
 local function populateTooltip_PartyMember(tooltip)
     tooltip:SetColumnLayout(2, "RIGHT", "LEFT")
     tooltip:SetColumnTextColor(1, GameFontNormalLeft:GetTextColor())
-    tooltip:AddLine(DUNGEON_DIFFICULTY, Dungeon_Difficulty_Level[GetDungeonDifficultyID()] or "??")
-    tooltip:AddLine(RAID_DIFFICULTY, Raid_Difficulty_Level[GetRaidDifficultyID()] or "¿¿")
+    tooltip:AddLine(DUNGEON_DIFFICULTY, RaidOrDungeonDifficultyLevel[GetDungeonDifficultyID()] or "??")
+    tooltip:AddLine(RAID_DIFFICULTY, RaidOrDungeonDifficultyLevel[GetRaidDifficultyID()] or "¿¿")
     tooltip:AddSeparator()
     --currentLootMethod, currentLootThreshold, currentMasterLooterName
     tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod])
@@ -288,29 +295,29 @@ local function populateTooltip_Solo(tooltip)
         tooltip:AddSeparator()
         ---
         local normalTenLine = tooltip:AddLine("n", "10")
-        tooltip:SetCell(normalTenLine, 1, Dungeon_Difficulty_Level[1])
+        tooltip:SetCell(normalTenLine, 1, RaidOrDungeonDifficultyLevel[1])
         tooltip:SetCellScript(normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
-        tooltip:SetCell(normalTenLine, 2, Raid_Difficulty_Level[3])
+        tooltip:SetCell(normalTenLine, 2, RaidOrDungeonDifficultyLevel[3])
         tooltip:SetCellScript(normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
         ---
         local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
-        tooltip:SetCell(heroicTwentyFiveLine, 1, Dungeon_Difficulty_Level[2])
+        tooltip:SetCell(heroicTwentyFiveLine, 1, RaidOrDungeonDifficultyLevel[2])
         tooltip:SetCellScript(heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
-        tooltip:SetCell(heroicTwentyFiveLine, 2, Raid_Difficulty_Level[4])
+        tooltip:SetCell(heroicTwentyFiveLine, 2, RaidOrDungeonDifficultyLevel[4])
         tooltip:SetCellScript(heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
 
         local currentDungeonDifficulty = GetDungeonDifficultyID()
         if currentDungeonDifficulty == 1 then
-            tooltip:SetCell(normalTenLine, 1, ">> " .. Dungeon_Difficulty_Level[1] .. " <<")
+            tooltip:SetCell(normalTenLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[1] .. " <<")
         elseif currentDungeonDifficulty == 2 then
-            tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. Dungeon_Difficulty_Level[2] .. " <<")
+            tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[2] .. " <<")
         end
 
         local currentRaidDifficulty = GetRaidDifficultyID()
         if currentRaidDifficulty == 3 then
-            tooltip:SetCell(normalTenLine, 2, ">> " .. Raid_Difficulty_Level[3] .. " <<")
+            tooltip:SetCell(normalTenLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[3] .. " <<")
         elseif currentRaidDifficulty == 4 then
-            tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. Raid_Difficulty_Level[4] .. " <<")
+            tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[4] .. " <<")
         end
 
         tooltip:AddSeparator(8)
@@ -367,15 +374,15 @@ local function get_LDB_Text(mlName, class)
     local raidDifficultyID = GetRaidDifficultyID()
     if mlName then
         return fmt_Loot_ML_String:format(
-            Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?",
-            Raid_Difficulty_Short_Name[raidDifficultyID] or "¿",
+            RaidOrDungeonDifficultyShortName[dungeonDifficultyID] or "?",
+            RaidOrDungeonDifficultyShortName[raidDifficultyID] or "¿",
             loot_method,
             RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName),
             loot_threshold,
             optOut
         )
     else
-        return fmt_Loot_String:format(Dungeon_Difficulty_Short_Name[dungeonDifficultyID] or "?", Raid_Difficulty_Short_Name[raidDifficultyID] or "¿", loot_method, loot_threshold, optOut)
+        return fmt_Loot_String:format(RaidOrDungeonDifficultyShortName[dungeonDifficultyID] or "?", RaidOrDungeonDifficultyShortName[raidDifficultyID] or "¿", loot_method, loot_threshold, optOut)
     end
 end
 
