@@ -32,7 +32,6 @@ local function ldbPVPToggle_OnClick(frame, button)
         end
     elseif button == "RightButton" then
         if IsPVPTimerRunning() then
-            local timeLeft = (GetPVPTimer() / 1000)
             local msg = string.format("PvP flag off - Time Left: %s", GetFormattedPVPTimer())
             if IsInRaid() then
                 SendChatMessage(msg, "RAID")

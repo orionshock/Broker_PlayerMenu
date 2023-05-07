@@ -46,6 +46,11 @@ local loot_method_sorted = {
     "group",
     "master"
 }
+local Color = {
+    ["Green"] = CreateColorFromHexString("FF20FF20"),
+    ["Red"] = CreateColorFromHexString("FFFF2020"),
+    ["Blue"] = CreateColorFromHexString("FF0070DD")
+}
 
 local RaidOrDungeonDifficultyLevel = {
     [001] = DUNGEON_DIFFICULTY1,
@@ -65,23 +70,33 @@ local RaidOrDungeonDifficultyLevel = {
     [194] = RAID_DIFFICULTY4
 }
 local RaidOrDungeonDifficultyShortName = {
-    [001] = "|cff20ff20N|r", --Green, Normal Mode
-    [002] = "|cffff2020H|r", --Red, Heroic
-    [003] = "|cff20ff2010|r", --Green
-    [004] = "|cffff202025|r", --Red
-    [005] = "|cff20ff2010|r", --Green
-    [006] = "|cffff202025|r", --Red
-    [009] = "|cff0070dd40|r", --Blue is for Old World / Not 10/25
-    [014] = "|cff0070ddGR|r", --Blue/Old World - Just a Raid
-    [148] = "|cff0070dd20|r", --Blue/Old World - 20Man
-    [173] = "|cff20ff20N|r", --Green, Normal Mode
-    [174] = "|cffff2020H|r", --Red, Heroic
-    [175] = "|cff20ff2010|r", --Green
-    [176] = "|cffff202025|r", --Red
-    [193] = "|cff20ff2010|r", --Green
-    [194] = "|cffff202025|r" --Red
+    [001] = Color.Green:WrapTextInColorCode("N"), --"N" Normal Green
+    [002] = Color.Red:WrapTextInColorCode("H"), --"H" Heroic Red
+    [003] = Color.Green:WrapTextInColorCode("10"), --10 General Green
+    [004] = Color.Red:WrapTextInColorCode("25"), --25 General Red
+    [005] = Color.Green:WrapTextInColorCode("10"), --10 General Green
+    [006] = Color.Red:WrapTextInColorCode("25"), --25 General Red
+    [009] = Color.Blue:WrapTextInColorCode("40"), --40 General Blue, Old World
+    [014] = Color.Blue:WrapTextInColorCode("GR"), --General Raid, Blue, Old World - Just a Raid
+    [148] = Color.Blue:WrapTextInColorCode("20"), --20 General Blue
+    [173] = Color.Green:WrapTextInColorCode("20N"), --20 Normal Mode, Green
+    [174] = Color.Red:WrapTextInColorCode("20H"), --20 Heroic Red
+    [175] = Color.Green:WrapTextInColorCode("10"), --10 General Green
+    [176] = Color.Red:WrapTextInColorCode("25"), --25 General Red
+    [193] = Color.Green:WrapTextInColorCode("10"), --10 General Green
+    [194] = Color.Red:WrapTextInColorCode("25") --25 General Red
 }
+--[[
+    GetDungeonDifficultyID()
+    --Normal => Green
+    --Heroic => Red
 
+    GetRaidDifficultyID()
+    -"10" Green
+    -"25" Red
+
+    -OldWorld/20/40/General => Blue
+]]
 --Functions Listed in order their used.
 
 local function tooltip_SetLootMethod(_, arg, button)
