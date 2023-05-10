@@ -46,6 +46,13 @@ local loot_method_sorted = {
     "group",
     "master"
 }
+
+local groupManage_Sorted = {
+    [1] = IsInGroup() and not IsInRaid() and CONVERT_TO_RAID or nil,
+    [2] = IsInRaid() and CONVERT_TO_PARTY or nil,
+    [3] = not IsInInstance() and RESET_INSTANCES or nil
+}
+
 local Color = {
     ["Green"] = CreateColorFromHexString("FF20FF20"),
     ["Red"] = CreateColorFromHexString("FFFF2020"),
@@ -53,29 +60,29 @@ local Color = {
 }
 
 local RaidOrDungeonDifficultyLevel = {
-    [001] = DUNGEON_DIFFICULTY1,
-    [002] = DUNGEON_DIFFICULTY2,
-    [003] = RAID_DIFFICULTY1,
-    [004] = RAID_DIFFICULTY2,
-    [005] = RAID_DIFFICULTY3,
-    [006] = RAID_DIFFICULTY4,
+    [001] = Color.Green:WrapTextInColorCode(DUNGEON_DIFFICULTY1),
+    [002] = Color.Red:WrapTextInColorCode(DUNGEON_DIFFICULTY2),
+    [003] = Color.Green:WrapTextInColorCode("10 Normal"),
+    [004] = Color.Green:WrapTextInColorCode("25 Normal"),
+    [005] = Color.Red:WrapTextInColorCode("10 Heroic"),
+    [006] = Color.Red:WrapTextInColorCode("25 Heroic"),
     [009] = "40 Player",
     [014] = "General Raid",
     [148] = "20 Player",
-    [173] = DUNGEON_DIFFICULTY1,
-    [174] = DUNGEON_DIFFICULTY2,
-    [175] = RAID_DIFFICULTY1,
-    [176] = RAID_DIFFICULTY2,
-    [193] = RAID_DIFFICULTY3,
-    [194] = RAID_DIFFICULTY4
+    [173] = Color.Green:WrapTextInColorCode(DUNGEON_DIFFICULTY1),
+    [174] = Color.Red:WrapTextInColorCode(DUNGEON_DIFFICULTY2),
+    [175] = Color.Green:WrapTextInColorCode(RAID_DIFFICULTY1),
+    [176] = Color.Green:WrapTextInColorCode(RAID_DIFFICULTY2),
+    [193] = Color.Red:WrapTextInColorCode("10 Heroic"),
+    [194] = Color.Red:WrapTextInColorCode("25 Heroic")
 }
 local RaidOrDungeonDifficultyShortName = {
     [001] = Color.Green:WrapTextInColorCode("N"), --"N" Normal Green
     [002] = Color.Red:WrapTextInColorCode("H"), --"H" Heroic Red
-    [003] = Color.Green:WrapTextInColorCode("10"), --10 General Green
-    [004] = Color.Red:WrapTextInColorCode("25"), --25 General Red
-    [005] = Color.Green:WrapTextInColorCode("10"), --10 General Green
-    [006] = Color.Red:WrapTextInColorCode("25"), --25 General Red
+    [003] = Color.Green:WrapTextInColorCode("10"), --10 Normal Green
+    [004] = Color.Green:WrapTextInColorCode("25"), --25 Normal Red
+    [005] = Color.Red:WrapTextInColorCode("10H"), --10 Heroic Green
+    [006] = Color.Red:WrapTextInColorCode("25H"), --25 Heroic Red
     [009] = Color.Blue:WrapTextInColorCode("40"), --40 General Blue, Old World
     [014] = Color.Blue:WrapTextInColorCode("GR"), --General Raid, Blue, Old World - Just a Raid
     [148] = Color.Blue:WrapTextInColorCode("20"), --20 General Blue
@@ -185,17 +192,22 @@ local function tooltip_GhettoRaid()
     end
 end
 
+local fmt_GetFormatedInstanceType = DARKYELLOW_FONT_COLOR:WrapTextInColorCode(">> %s <<")
+local function GetFormatedInstanceType(currentDungeonDifficulty, index)
+    if index == currentDungeonDifficulty then
+        return fmt_GetFormatedInstanceType:format(RaidOrDungeonDifficultyLevel[index])
+    else
+        return RaidOrDungeonDifficultyLevel[index]
+    end
+end
+
 local function populateTooltip_PartyLeader(tooltip)
     tooltip:SetColumnLayout(2, "CENTER", "CENTER")
 
     local tipLine
     tooltip:AddHeader(LOOT_METHOD, "Manage")
     tooltip:AddSeparator()
-    local groupManage_Sorted = {
-        [1] = IsInGroup() and not IsInRaid() and CONVERT_TO_RAID or nil,
-        [2] = IsInRaid() and CONVERT_TO_PARTY or nil,
-        [3] = not IsInInstance() and RESET_INSTANCES or nil
-    }
+
     for i = 1, #loot_method_sorted do
         local currentLine
         if currentLootMethod == loot_method_sorted[i] then
@@ -236,34 +248,26 @@ local function populateTooltip_PartyLeader(tooltip)
     end
 
     tooltip:AddSeparator(8)
-    tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
-    tooltip:AddSeparator()
-    ---
-    local normalTenLine = tooltip:AddLine("n", "10")
-    tooltip:SetCell(normalTenLine, 1, RaidOrDungeonDifficultyLevel[1])
-    tooltip:SetCellScript(normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
-    tooltip:SetCell(normalTenLine, 2, RaidOrDungeonDifficultyLevel[3])
-    tooltip:SetCellScript(normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
-    ---
-    local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
-    tooltip:SetCell(heroicTwentyFiveLine, 1, RaidOrDungeonDifficultyLevel[2])
-    tooltip:SetCellScript(heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
-    tooltip:SetCell(heroicTwentyFiveLine, 2, RaidOrDungeonDifficultyLevel[4])
-    tooltip:SetCellScript(heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
-
+    --Dungeon Normal/Heroic
     local currentDungeonDifficulty = GetDungeonDifficultyID()
-    if currentDungeonDifficulty == 1 then
-        tooltip:SetCell(normalTenLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[1] .. " <<")
-    elseif currentDungeonDifficulty == 2 then
-        tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[2] .. " <<")
-    end
+    tipLine = tooltip:AddHeader(DUNGEON_DIFFICULTY)
+    tooltip:SetCell(tipLine, 1, DUNGEON_DIFFICULTY, nil, "CENTER", 2)
 
+    tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 1), GetFormatedInstanceType(currentDungeonDifficulty, 2))
+    tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
+    tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+
+    --Raid Difficluty { 10N   25N }, {10H   25H}
+    tooltip:AddSeparator()
     local currentRaidDifficulty = GetRaidDifficultyID()
-    if currentRaidDifficulty == 3 then
-        tooltip:SetCell(normalTenLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[3] .. " <<")
-    elseif currentRaidDifficulty == 4 then
-        tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[4] .. " <<")
-    end
+    tipLine = tooltip:AddHeader(RAID_DIFFICULTY)
+    tooltip:SetCell(tipLine, 1, DUNGEON_DIFFICULTY, nil, "CENTER", 2)
+    tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 3), GetFormatedInstanceType(currentRaidDifficulty, 4))
+    tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
+    tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
+    tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 5), GetFormatedInstanceType(currentRaidDifficulty, 6))
+    tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 5)
+    tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 6)
 
     tooltip:AddSeparator(8)
 
@@ -305,41 +309,33 @@ local function populateTooltip_Solo(tooltip)
         local tipLine = tooltip:AddLine("Ghetto Hearth", "Ghetto Raid")
         tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_GhettoHearth)
         tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_GhettoRaid)
-        --
-        tooltip:AddHeader(DUNGEON_DIFFICULTY, RAID_DIFFICULTY)
-        tooltip:AddSeparator()
-        ---
-        local normalTenLine = tooltip:AddLine("n", "10")
-        tooltip:SetCell(normalTenLine, 1, RaidOrDungeonDifficultyLevel[1])
-        tooltip:SetCellScript(normalTenLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
-        tooltip:SetCell(normalTenLine, 2, RaidOrDungeonDifficultyLevel[3])
-        tooltip:SetCellScript(normalTenLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
-        ---
-        local heroicTwentyFiveLine = tooltip:AddLine("h", "25")
-        tooltip:SetCell(heroicTwentyFiveLine, 1, RaidOrDungeonDifficultyLevel[2])
-        tooltip:SetCellScript(heroicTwentyFiveLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
-        tooltip:SetCell(heroicTwentyFiveLine, 2, RaidOrDungeonDifficultyLevel[4])
-        tooltip:SetCellScript(heroicTwentyFiveLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
+        tooltip:AddSeparator(4)
 
+        --Dungeon Normal/Heroic
         local currentDungeonDifficulty = GetDungeonDifficultyID()
-        if currentDungeonDifficulty == 1 then
-            tooltip:SetCell(normalTenLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[1] .. " <<")
-        elseif currentDungeonDifficulty == 2 then
-            tooltip:SetCell(heroicTwentyFiveLine, 1, ">> " .. RaidOrDungeonDifficultyLevel[2] .. " <<")
-        end
+        tipLine = tooltip:AddHeader(DUNGEON_DIFFICULTY)
+        tooltip:SetCell(tipLine, 1, DUNGEON_DIFFICULTY, nil, "CENTER", 2)
 
+        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 1), GetFormatedInstanceType(currentDungeonDifficulty, 2))
+        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
+        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+
+        --Raid Difficluty { 10N   25N }, {10H   25H}
+        tooltip:AddSeparator()
         local currentRaidDifficulty = GetRaidDifficultyID()
-        if currentRaidDifficulty == 3 then
-            tooltip:SetCell(normalTenLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[3] .. " <<")
-        elseif currentRaidDifficulty == 4 then
-            tooltip:SetCell(heroicTwentyFiveLine, 2, ">> " .. RaidOrDungeonDifficultyLevel[4] .. " <<")
-        end
+        tipLine = tooltip:AddHeader(RAID_DIFFICULTY)
+        tooltip:SetCell(tipLine, 1, DUNGEON_DIFFICULTY, nil, "CENTER", 2)
+        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 3), GetFormatedInstanceType(currentRaidDifficulty, 4))
+        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
+        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
+        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 5), GetFormatedInstanceType(currentRaidDifficulty, 6))
+        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 5)
+        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 6)
 
         tooltip:AddSeparator(8)
-        --Instance Reset / Ghetto Raid
+        --Instance Reset / Instructions
         local currentLine = tooltip:AddLine(RESET_INSTANCES, "(Shift Click alot)")
         tooltip:SetCellScript(currentLine, 1, "OnMouseUp", tooltip_ResetInstances)
-        --tooltip:SetCellScript(currentLine,2, "OnMouseUp", tooltip_GhettoRaid)
         tooltip:AddSeparator(1)
         --
         currentLine = tooltip:AddLine("Leave")
@@ -377,9 +373,9 @@ local function LootMethod_OnEnter(self)
     tooltip:SmartAnchorTo(self)
     tooltip:Show()
 end
-
-local fmt_Loot_String = "[%s%s] %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] Loot Method (LootThreshold) OptOutFlag
-local fmt_Loot_ML_String = "[%s%s] %s: %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] ML: MasterLooter_Name (LootThreshold) OptOutFlag
+local fmt_shortInstanceDisplay = DARKYELLOW_FONT_COLOR:WrapTextInColorCode("[%s||%s]")
+local fmt_Loot_String = fmt_shortInstanceDisplay .. " %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] Loot Method (LootThreshold) OptOutFlag
+local fmt_Loot_ML_String = fmt_shortInstanceDisplay .. " %s: %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] ML: MasterLooter_Name (LootThreshold) OptOutFlag
 
 local function get_LDB_Text(mlName, class)
     local loot_method = loot_method_strings_short[currentLootMethod]
@@ -422,6 +418,9 @@ eventFrame:RegisterEvent("INSTANCE_BOOT_STOP")
 eventFrame:SetScript(
     "OnEvent",
     function(self, event)
+        currentLootMethod = GetLootMethod() or "group"
+        currentLootThreshold = GetLootThreshold() or "2"
+
         if event == "RightButton" then
             SetOptOutOfLoot(not GetOptOutOfLoot())
         end
@@ -432,8 +431,6 @@ eventFrame:SetScript(
             self:Hide()
         end
         if IsInRaid() or IsInGroup() then
-            currentLootMethod = GetLootMethod() or "group"
-            currentLootThreshold = GetLootThreshold() or "2"
             if not (UnitInRaid(currentMasterLooterName) or UnitInParty(currentMasterLooterName)) then
                 currentMasterLooterName = nil
             end
@@ -454,7 +451,7 @@ eventFrame:SetScript(
                 myTooltip = nil
             end
         else
-            ldbObject.text = SOLO .. (GetOptOutOfLoot() and "*" or "")
+            ldbObject.text = get_LDB_Text() --SOLO .. (GetOptOutOfLoot() and "*" or "")
         end
     end
 )
