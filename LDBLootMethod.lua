@@ -47,12 +47,6 @@ local loot_method_sorted = {
     "master"
 }
 
-local groupManage_Sorted = {
-    [1] = IsInGroup() and not IsInRaid() and CONVERT_TO_RAID or nil,
-    [2] = IsInRaid() and CONVERT_TO_PARTY or nil,
-    [3] = not IsInInstance() and RESET_INSTANCES or nil
-}
-
 local Color = {
     ["Green"] = CreateColorFromHexString("FF20FF20"),
     ["Red"] = CreateColorFromHexString("FFFF2020"),
@@ -207,6 +201,12 @@ local function populateTooltip_PartyLeader(tooltip)
     local tipLine
     tooltip:AddHeader(LOOT_METHOD, "Manage")
     tooltip:AddSeparator()
+
+    local groupManage_Sorted = {
+        [1] = IsInGroup() and not IsInRaid() and CONVERT_TO_RAID or nil,
+        [2] = IsInRaid() and CONVERT_TO_PARTY or nil,
+        [3] = not IsInInstance() and RESET_INSTANCES or nil
+    }
 
     for i = 1, #loot_method_sorted do
         local currentLine
@@ -451,7 +451,7 @@ eventFrame:SetScript(
                 myTooltip = nil
             end
         else
-            ldbObject.text = get_LDB_Text() --SOLO .. (GetOptOutOfLoot() and "*" or "")
+            ldbObject.text = SOLO .. (GetOptOutOfLoot() and "*" or "")
         end
     end
 )
