@@ -15,7 +15,7 @@ local corpseInRange = false
 local playerDeadInCorpse = false
 ---
 
-function populateTooltip_RetrieveCorpse(tooltip)
+local function populateTooltip_RetrieveCorpse(tooltip)
     local currentLine = tooltip:AddLine(RECOVER_CORPSE)
     tooltip:SetLineScript(currentLine, "OnMouseUp", RetrieveCorpse)
 end
@@ -26,7 +26,7 @@ local function DoSelfRez(frame, info, button)
     end
 end
 
-function populateTooltip_SelfRez(tooltip)
+local function populateTooltip_SelfRez(tooltip)
     local selfRezOptions = C_DeathInfo.GetSelfResurrectOptions()
     for i = 1, #selfRezOptions do
         local info = selfRezOptions[i]
@@ -35,7 +35,7 @@ function populateTooltip_SelfRez(tooltip)
     end
 end
 
-function populateTooltip_PlayerIsDead(tooltip)
+local function populateTooltip_PlayerIsDead(tooltip)
     local currentLine = tooltip:AddLine(DEATH_RELEASE)
     tooltip:SetLineScript(currentLine, "OnMouseUp", RepopMe)
 end
@@ -61,7 +61,7 @@ local function RezOptions_OnEnter(frame)
         populateTooltip_RetrieveCorpse(tooltip)
     end
     if C_DeathInfo.GetSelfResurrectOptions() then
-        showingtooltip = true
+        showingTooltip = true
         populateTooltip_SelfRez(tooltip)
     end
     if UnitIsDead("player") then
@@ -120,7 +120,7 @@ eventFrame:SetScript("OnUpdate", function(self, elapsed)
     self.interval = self.interval + elapsed
     if GetReleaseTimeRemaining() then
         if self.interval > 1 then
-            ldbObject.text = SecondsToTime(GetReleaseTimeRemaining())
+            ldbObject.text = SecondsToTime( GetReleaseTimeRemaining() )
             self.interval = 0
         end
     else
