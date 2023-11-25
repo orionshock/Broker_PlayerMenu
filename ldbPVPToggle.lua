@@ -46,7 +46,8 @@ end
 
 local function ldbPVPToggle_OnTooltipShow(tooltip)
     local pvpDesired = GetPVPDesired() and "|cFF00FF00Yes|r" or "|cFFFF0000No|r"
-    local flaggedState = (UnitIsPVPFreeForAll("player") and "|cFF00FF00FFA|r") or (UnitIsPVP("player") and "|cFF00FF00PVP Flaged|r") or ("|cFFFF0000Not Flaged|r")
+    local flaggedState = (UnitIsPVPFreeForAll("player") and "|cFF00FF00FFA|r") or
+    (UnitIsPVP("player") and "|cFF00FF00PVP Flaged|r") or ("|cFFFF0000Not Flaged|r")
 
     if IsPVPTimerRunning() then
         local timeLeft = (GetPVPTimer() / 1000)
