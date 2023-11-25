@@ -90,6 +90,7 @@
         "RECOVER_CORPSE",
         "C_DeathInfo",
         "DEATH_RELEASE",
-        "GetReleaseTimeRemaining"
+        "GetReleaseTimeRemaining",
+        "SecondsToTime"
     ]
 }
