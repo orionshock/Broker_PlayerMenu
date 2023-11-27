@@ -33,10 +33,14 @@ local function ldbPVPToggle_OnClick(frame, button)
     elseif button == "RightButton" then
         if IsPVPTimerRunning() then
             local msg = string.format("PvP flag off - Time Left: %s", GetFormattedPVPTimer())
-            if IsInRaid() then
+            if IsInRaid(LE_PARTY_CATEGORY_INSTANCE) then   --Instance Raid
+                SendChatMessage(msg, "INSTANCE_CHAT")
+            elseif IsInRaid(LE_PARTY_CATEGORY_HOME) then   --Home Raid
                 SendChatMessage(msg, "RAID")
-            elseif IsInGroup() then
+            elseif IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then --Instance Party
                 SendChatMessage(msg, "PARTY")
+            elseif IsInGroup(LE_PARTY_CATEGORY_HOME) then --Home Party
+                SendChatMessage(msg, "INSTANCE_CHAT")
             else
                 print(msg)
             end
@@ -47,7 +51,7 @@ end
 local function ldbPVPToggle_OnTooltipShow(tooltip)
     local pvpDesired = GetPVPDesired() and "|cFF00FF00Yes|r" or "|cFFFF0000No|r"
     local flaggedState = (UnitIsPVPFreeForAll("player") and "|cFF00FF00FFA|r") or
-    (UnitIsPVP("player") and "|cFF00FF00PVP Flaged|r") or ("|cFFFF0000Not Flaged|r")
+        (UnitIsPVP("player") and "|cFF00FF00PVP Flaged|r") or ("|cFFFF0000Not Flaged|r")
 
     if IsPVPTimerRunning() then
         local timeLeft = (GetPVPTimer() / 1000)

@@ -91,6 +91,8 @@
         "C_DeathInfo",
         "DEATH_RELEASE",
         "GetReleaseTimeRemaining",
-        "SecondsToTime"
+        "SecondsToTime",
+        "LE_PARTY_CATEGORY_HOME",
+        "LE_PARTY_CATEGORY_INSTANCE"
     ]
 }
