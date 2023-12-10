@@ -93,6 +93,7 @@
         "GetReleaseTimeRemaining",
         "SecondsToTime",
         "LE_PARTY_CATEGORY_HOME",
-        "LE_PARTY_CATEGORY_INSTANCE"
+        "LE_PARTY_CATEGORY_INSTANCE",
+        "INSTANCE_CHAT"
     ]
 }

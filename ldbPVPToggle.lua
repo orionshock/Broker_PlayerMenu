@@ -29,18 +29,20 @@ local function ldbPVPToggle_OnClick(frame, button)
     if button == "LeftButton" then
         if not InCombatLockdown() then
             TogglePVP()
+        else
+            print("Not Toggling PVP Flag in combat")
         end
     elseif button == "RightButton" then
         if IsPVPTimerRunning() then
             local msg = string.format("PvP flag off - Time Left: %s", GetFormattedPVPTimer())
-            if IsInRaid(LE_PARTY_CATEGORY_INSTANCE) then   --Instance Raid
+            if IsInRaid(LE_PARTY_CATEGORY_INSTANCE) then      --Instance Raid
                 SendChatMessage(msg, "INSTANCE_CHAT")
-            elseif IsInRaid(LE_PARTY_CATEGORY_HOME) then   --Home Raid
+            elseif IsInRaid(LE_PARTY_CATEGORY_HOME) then      --Home Raid
                 SendChatMessage(msg, "RAID")
             elseif IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then --Instance Party
-                SendChatMessage(msg, "PARTY")
-            elseif IsInGroup(LE_PARTY_CATEGORY_HOME) then --Home Party
                 SendChatMessage(msg, "INSTANCE_CHAT")
+            elseif IsInGroup(LE_PARTY_CATEGORY_HOME) then     --Home Party
+                SendChatMessage(msg, "PARTY")
             else
                 print(msg)
             end
