@@ -70,6 +70,8 @@ function rdfMonitor:LFG_UPDATE(event, ...)
         local fmted_TimeInQueue = SecondsToTime(GetTime() - queuedTime, true)
         ldbObject.text          = (colorStrings.tankNeeds[tankNeeds]) ..
             (colorStrings.healerNeeds[healerNeeds]) .. (colorStrings.dpsNeeds[dpsNeeds]) .. " -- " .. fmted_TimeInQueue
+    elseif UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
+        ldbObject.text = "|cFFFF0000" .. SecondsToTime(GetLFGRandomCooldownExpiration() - GetTime()) .. "|r"
     else
         ldbObject.text = ""
     end
@@ -78,6 +80,7 @@ end
 rdfMonitor.LFG_QUEUE_STATUS_UPDATE = rdfMonitor.LFG_UPDATE
 
 local function HasCoolDownCheck(self, event, ...)
+    print(event, "Cooldown:", UnitHasLFGRandomCooldown("player"), "- Expiration:", GetLFGRandomCooldownExpiration())
     if UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
         eventFrame:Show()
     else
@@ -88,7 +91,7 @@ end
 local interval, timeElapsed = 1, 0
 eventFrame:SetScript("OnUpdate", function(self, elapsed)
     timeElapsed = timeElapsed + elapsed
-    if elapsed > interval then
+    if timeElapsed > interval then
         timeElapsed = 0
         if UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
             ldbObject.text = "|cFFFF0000" .. SecondsToTime(GetLFGRandomCooldownExpiration() - GetTime()) .. "|r"
