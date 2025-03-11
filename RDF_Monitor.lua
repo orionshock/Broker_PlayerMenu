@@ -80,7 +80,6 @@ end
 rdfMonitor.LFG_QUEUE_STATUS_UPDATE = rdfMonitor.LFG_UPDATE
 
 local function HasCoolDownCheck(self, event, ...)
-    print(event, "Cooldown:", UnitHasLFGRandomCooldown("player"), "- Expiration:", GetLFGRandomCooldownExpiration())
     if UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
         eventFrame:Show()
     else
@@ -96,8 +95,9 @@ eventFrame:SetScript("OnUpdate", function(self, elapsed)
         if UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
             ldbObject.text = "|cFFFF0000" .. SecondsToTime(GetLFGRandomCooldownExpiration() - GetTime()) .. "|r"
         else
-            self:Hide()
+            ldbObject.text = ""
             rdfMonitor:LFG_UPDATE()
+            self:Hide()
         end
     end
 end)
