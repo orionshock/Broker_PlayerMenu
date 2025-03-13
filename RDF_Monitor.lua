@@ -42,6 +42,7 @@ local ldbObject = {
     label = "RDF",
     text = "",
     icon = "237185", --"inv_jewelcrafting_dragonseye02"
+    OnClick = function() rdfMonitor:LFG_UPDATE() end
 }
 local libLDB = LibStub:GetLibrary("LibDataBroker-1.1")
 libLDB:NewDataObject("RDFQueueMonitor", ldbObject)
@@ -63,23 +64,11 @@ local colorStrings = {
     }
 }
 
-function rdfMonitor:LFG_UPDATE(event, ...)
-    local hasData, leaderNeeds, tankNeeds, healerNeeds, dpsNeeds, _, _, _, _, _, _, _, _, _, _, _, queuedTime =
-        GetLFGQueueStats(1)
-    if hasData then --we're in a queue
-        local fmted_TimeInQueue = SecondsToTime(GetTime() - queuedTime, true)
-        ldbObject.text          = (colorStrings.tankNeeds[tankNeeds]) ..
-            (colorStrings.healerNeeds[healerNeeds]) .. (colorStrings.dpsNeeds[dpsNeeds]) .. " -- " .. fmted_TimeInQueue
-    elseif UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
-        ldbObject.text = "|cFFFF0000" .. SecondsToTime(GetLFGRandomCooldownExpiration() - GetTime()) .. "|r"
-    else
-        ldbObject.text = ""
+local function HasCoolDownCheck()
+    if GetLFGQueueStats(1) then 
+        eventFrame:Hide()
+        return
     end
-end
-
-rdfMonitor.LFG_QUEUE_STATUS_UPDATE = rdfMonitor.LFG_UPDATE
-
-local function HasCoolDownCheck(self, event, ...)
     if UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
         eventFrame:Show()
     else
@@ -87,11 +76,36 @@ local function HasCoolDownCheck(self, event, ...)
     end
 end
 
+function rdfMonitor:LFG_UPDATE(event, ...)
+    local hasData, leaderNeeds, tankNeeds, healerNeeds, dpsNeeds, _, _, _, _, _, _, _, _, _, _, _, queuedTime =
+        GetLFGQueueStats(1)
+    if hasData then --we're in a queue
+        eventFrame:Hide()
+        local fmted_TimeInQueue = SecondsToTime(GetTime() - queuedTime, true)
+        ldbObject.text          = (colorStrings.tankNeeds[tankNeeds]) ..
+            (colorStrings.healerNeeds[healerNeeds]) .. (colorStrings.dpsNeeds[dpsNeeds]) .. " -- " .. fmted_TimeInQueue
+        return
+    elseif UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
+        RunNextFrame( HasCoolDownCheck )
+        return
+    else
+        ldbObject.text = ""
+    end
+end
+
+rdfMonitor.LFG_QUEUE_STATUS_UPDATE = rdfMonitor.LFG_UPDATE
+
 local interval, timeElapsed = 1, 0
 eventFrame:SetScript("OnUpdate", function(self, elapsed)
     timeElapsed = timeElapsed + elapsed
     if timeElapsed > interval then
         timeElapsed = 0
+        if GetLFGQueueStats(1) then 
+            ldbObject.text = ""
+            rdfMonitor:LFG_UPDATE()
+            eventFrame:Hide()
+            return
+        end
         if UnitHasLFGRandomCooldown("player") and GetLFGRandomCooldownExpiration() then
             ldbObject.text = "|cFFFF0000" .. SecondsToTime(GetLFGRandomCooldownExpiration() - GetTime()) .. "|r"
         else

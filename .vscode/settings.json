@@ -39,7 +39,8 @@
         "INSTANCE_CHAT",
         "NUM_LE_LFG_CATEGORYS",
         "LFDQueueFrameRandomCooldownFrame_Update",
-        "LFDQueueFrameRandomCooldownFrame_OnEvent"
+        "LFDQueueFrameRandomCooldownFrame_OnEvent",
+        "RunNextFrame"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
