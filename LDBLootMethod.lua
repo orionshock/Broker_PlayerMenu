@@ -50,7 +50,9 @@ local loot_method_sorted = {
 local Color = {
     ["Green"] = CreateColorFromHexString("FF20FF20"),
     ["Red"] = CreateColorFromHexString("FFFF2020"),
-    ["Blue"] = CreateColorFromHexString("FF0070DD")
+    ["Blue"] = CreateColorFromHexString("FF0070DD"),
+    ["Purple"] = CreateColorFromHexString("A020F0"), -- Purple
+    ["Orange"] = CreateColorFromHexString("FFA500") -- Orange
 }
 
 local RaidOrDungeonDifficultyLevel = {
@@ -61,6 +63,7 @@ local RaidOrDungeonDifficultyLevel = {
     [004] = Color.Green:WrapTextInColorCode("25 Normal"),
     [005] = Color.Red:WrapTextInColorCode("10 Heroic"),
     [006] = Color.Red:WrapTextInColorCode("25 Heroic"),
+    [008] = Color.Orange:WrapTextInColorCode(PLAYER_DIFFICULTY5),
     [009] = "40 Player",
     [014] = "General Raid",
     [148] = "20 Player",
@@ -69,7 +72,8 @@ local RaidOrDungeonDifficultyLevel = {
     [175] = Color.Green:WrapTextInColorCode(RAID_DIFFICULTY1),
     [176] = Color.Green:WrapTextInColorCode(RAID_DIFFICULTY2),
     [193] = Color.Red:WrapTextInColorCode("10 Heroic"),
-    [194] = Color.Red:WrapTextInColorCode("25 Heroic")
+    [194] = Color.Red:WrapTextInColorCode("25 Heroic"),
+    [237] = Color.Purple:WrapTextInColorCode("Celestial")
 }
 local RaidOrDungeonDifficultyShortName = {
     [000] = "",
@@ -79,6 +83,7 @@ local RaidOrDungeonDifficultyShortName = {
     [004] = Color.Green:WrapTextInColorCode("25"),  --25 Normal Red
     [005] = Color.Red:WrapTextInColorCode("10H"),   --10 Heroic Green
     [006] = Color.Red:WrapTextInColorCode("25H"),   --25 Heroic Red
+    [008] = Color.Orange:WrapTextInColorCode("Ch"),
     [009] = Color.Blue:WrapTextInColorCode("40"),   --40 General Blue, Old World
     [014] = Color.Blue:WrapTextInColorCode("GR"),   --General Raid, Blue, Old World - Just a Raid
     [148] = Color.Blue:WrapTextInColorCode("20"),   --20 General Blue
@@ -87,7 +92,8 @@ local RaidOrDungeonDifficultyShortName = {
     [175] = Color.Green:WrapTextInColorCode("10"),  --10 General Green
     [176] = Color.Red:WrapTextInColorCode("25"),    --25 General Red
     [193] = Color.Green:WrapTextInColorCode("10"),  --10 General Green
-    [194] = Color.Red:WrapTextInColorCode("25")     --25 General Red
+    [194] = Color.Red:WrapTextInColorCode("25"),    --25 General Red
+    [237] = Color.Purple:WrapTextInColorCode("Cel")
 }
 --[[
     GetDungeonDifficultyID()
@@ -416,7 +422,7 @@ local function get_LDB_Text(mlName, class)
     local loot_threshold = ITEM_QUALITY_COLORS[currentLootThreshold].color:WrapTextInColorCode(_G
         ["ITEM_QUALITY" .. currentLootThreshold .. "_DESC"]:sub(1, 1))
     local optOut = GetOptOutOfLoot() and "*" or ""
-    local dungeonDifficultyID = (GetDungeonDifficultyID() ~= 0 and GetDungeonDifficultyID() ) or 1
+    local dungeonDifficultyID = (GetDungeonDifficultyID() ~= 0 and GetDungeonDifficultyID()) or 1
     local raidDifficultyID = (GetRaidDifficultyID() ~= 0 and GetRaidDifficultyID()) or 14
     if mlName then
         return fmt_Loot_ML_String:format(

@@ -73,6 +73,7 @@ local function HasCoolDownCheck()
         eventFrame:Show()
     else
         eventFrame:Hide()
+        RunNextFrame( rdfMonitor.LFG_UPDATE )
     end
 end
 

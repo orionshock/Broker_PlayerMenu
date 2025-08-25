@@ -29,7 +29,6 @@
         "ITEM_QUALITY_COLORS",
         "RAID_CLASS_COLORS",
         "BACKDROP_SLIDER_8_8",
-        "Mixin",
         "BackdropTemplateMixin",
         "RECOVER_CORPSE",
         "DEATH_RELEASE",
@@ -40,7 +39,8 @@
         "NUM_LE_LFG_CATEGORYS",
         "LFDQueueFrameRandomCooldownFrame_Update",
         "LFDQueueFrameRandomCooldownFrame_OnEvent",
-        "RunNextFrame"
+        "RunNextFrame",
+        "PLAYER_DIFFICULTY5"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
@@ -55,6 +55,7 @@
         "utf8": "disable"
     },
     "Lua.workspace.library": [
-        "~\\.vscode\\extensions\\ketho.wow-api-0.18.2\\Annotations"
+        "~\\.vscode\\extensions\\ketho.wow-api-0.21.0\\Annotations\\Core",
+        "~\\.vscode\\extensions\\ketho.wow-api-0.21.0\\Annotations\\FrameXML"
     ]
 }
