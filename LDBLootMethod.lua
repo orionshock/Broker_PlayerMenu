@@ -1,13 +1,3 @@
---luacheck: no max line length
---luacheck: globals LibStub CreateFrame LOOT LOOT_FREE_FOR_ALL LOOT_ROUND_ROBIN LOOT_NEED_BEFORE_GREED LOOT_GROUP_LOOT
---luacheck: globals DUNGEON_DIFFICULTY1 DUNGEON_DIFFICULTY2 SetLootMethod SetLootThreshold SetDungeonDifficultyID
---luacheck: globals IsShiftKeyDown ResetInstances InviteUnit C_Timer LeaveParty InviteUnit ConvertToRaid ConvertToParty
---luacheck: globals InCombatLockdown IsInRaid LOOT_METHOD LOOT_THRESHOLD ITEM_QUALITY_COLORS GetDungeonDifficultyID
---luacheck: globals IsInInstance RESET_INSTANCES GameFontNormalLeft DUNGEON_DIFFICULTY LOOT_MASTER_LOOTER
---luacheck: globals UIParent UnitClass RAID_CLASS_COLORS UnitIsGroupLeader IsInGroup GetOptOutOfLoot SetOptOutOfLoot
---luacheck: globals GetLootMethod GetLootThreshold UnitInRaid UnitInParty GetRaidRosterInfo SOLO RAID_DIFFICULTY1 RAID_DIFFICULTY2
---luacheck: globals SetRaidDifficultyID CONVERT_TO_RAID CONVERT_TO_PARTY RAID_DIFFICULTY GetRaidDifficultyID PARTY_LEAVE
-
 --An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
 
@@ -47,12 +37,18 @@ local loot_method_sorted = {
     "master"
 }
 
+local loot_method_to_index = {
+    ["freeforall"] = 0,
+    ["group"] = 3,
+    ["master"] = 2,
+}
+
 local Color = {
     ["Green"] = CreateColorFromHexString("FF20FF20"),
     ["Red"] = CreateColorFromHexString("FFFF2020"),
     ["Blue"] = CreateColorFromHexString("FF0070DD"),
-    ["Purple"] = CreateColorFromHexString("A020F0"), -- Purple
-    ["Orange"] = CreateColorFromHexString("FFA500") -- Orange
+    ["Purple"] = CreateColorFromHexString("FFA020F0"), -- Purple
+    ["Orange"] = CreateColorFromHexString("FFFFA500")  -- Orange
 }
 
 local RaidOrDungeonDifficultyLevel = {
@@ -95,24 +91,13 @@ local RaidOrDungeonDifficultyShortName = {
     [194] = Color.Red:WrapTextInColorCode("25"),    --25 General Red
     [237] = Color.Purple:WrapTextInColorCode("Cel")
 }
---[[
-    GetDungeonDifficultyID()
-    --Normal => Green
-    --Heroic => Red
-
-    GetRaidDifficultyID()
-    -"10" Green
-    -"25" Red
-
-    -OldWorld/20/40/General => Blue
-]]
---Functions Listed in order their used.
 
 local function tooltip_SetLootMethod(_, arg, button)
     if button == "LeftButton" then
         LibQTip:Release(myTooltip)
         myTooltip = nil
-        SetLootMethod(loot_method_sorted[arg], currentMasterLooterName or "player", currentLootThreshold)
+        C_PartyInfo.SetLootMethod(loot_method_to_index[loot_method_sorted[arg]], currentMasterLooterName or "player",
+        currentLootThreshold)
     end
 end
 
@@ -273,6 +258,9 @@ local function populateTooltip_PartyLeader(tooltip)
             GetFormatedInstanceType(currentDungeonDifficulty, 2))
         tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
         tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+
+        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 8), "")
+        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 8)
     end
 
     --Raid Difficluty { 10N   25N }, {10H   25H}
@@ -439,12 +427,23 @@ local function get_LDB_Text(mlName, class)
     end
 end
 
+local reverseLootMethod = {}
+for k, v in pairs(Enum.LootMethod) do
+    reverseLootMethod[v] = k
+end
+
+function GetLootMethod()
+    local m = reverseLootMethod[C_PartyInfo.GetLootMethod()]
+    return m and m:lower()
+end
+
 local ldbObject = {
     type = "data source",
     label = "LootMethod",
     icon = "133785", --"inv_misc_coin_02"
     OnEnter = LootMethod_OnEnter
 }
+
 local libLDB = LibStub:GetLibrary("LibDataBroker-1.1")
 libLDB:NewDataObject("LootMethod", ldbObject)
 
