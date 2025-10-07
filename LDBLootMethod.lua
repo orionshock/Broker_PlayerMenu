@@ -20,7 +20,7 @@ local loot_method_strings = {
     ["roundrobin"] = LOOT_ROUND_ROBIN:gsub(removeprefix, ""),
     ["needbeforegreed"] = LOOT_NEED_BEFORE_GREED:gsub(removeprefix, ""),
     ["group"] = LOOT_GROUP_LOOT:gsub(removeprefix, ""),
-    ["master"] = LOOT_MASTER_LOOTER:gsub(removeprefix, "")
+    ["masterlooter"] = LOOT_MASTER_LOOTER:gsub(removeprefix, "")
 }
 
 local loot_method_strings_short = {
@@ -28,19 +28,19 @@ local loot_method_strings_short = {
     ["roundrobin"] = "RR",
     ["needbeforegreed"] = "NB4G",
     ["group"] = "GrpLoot",
-    ["master"] = "ML"
+    ["masterlooter"] = "ML"
 }
 
 local loot_method_sorted = {
     "freeforall",
     "group",
-    "master"
+    "masterlooter"
 }
 
 local loot_method_to_index = {
     ["freeforall"] = 0,
     ["group"] = 3,
-    ["master"] = 2,
+    ["masterlooter"] = 2,
 }
 
 local Color = {
@@ -97,7 +97,7 @@ local function tooltip_SetLootMethod(_, arg, button)
         LibQTip:Release(myTooltip)
         myTooltip = nil
         C_PartyInfo.SetLootMethod(loot_method_to_index[loot_method_sorted[arg]], currentMasterLooterName or "player",
-        currentLootThreshold)
+            currentLootThreshold)
     end
 end
 
@@ -302,7 +302,7 @@ local function populateTooltip_PartyMember(tooltip)
     --currentLootMethod, currentLootThreshold, currentMasterLooterName
     tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod])
     --if masterlooter - put the ML Name here
-    if (currentLootMethod == "master") and (currentMasterLooterName ~= "") then
+    if (currentLootMethod == "masterlooter") and (currentMasterLooterName ~= "") then
         local _, class = UnitClass(currentMasterLooterName)
         if class then
             tooltip:AddLine("Loot Master", RAID_CLASS_COLORS[class]:WrapTextInColorCode(currentMasterLooterName))
@@ -340,6 +340,10 @@ local function populateTooltip_Solo(tooltip)
                 GetFormatedInstanceType(currentDungeonDifficulty, 2))
             tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
             tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
+
+            tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 8), "")
+            tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 8)
+            
             tooltip:AddSeparator()
         end
 
@@ -476,7 +480,7 @@ eventFrame:SetScript(
                 currentMasterLooterName = nil
             end
 
-            if currentLootMethod == "master" then
+            if currentLootMethod == "masterlooter" then
                 for i = 1, 40 do
                     local name, _, _, _, _, class, _, _, _, _, isML = GetRaidRosterInfo(i)
                     if isML and name then

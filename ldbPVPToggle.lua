@@ -9,8 +9,6 @@ addon.ldbPVPToggle = ldbPVPToggle
 local eventFrame = CreateFrame("Frame", nil, UIParent)
 ldbPVPToggle.eventFrame = eventFrame
 
-local PVP_ICON_HORDE = "132485"
-local PVP_ICON_ALLIANCE = "132486"
 local PVP_ICON_OFF = "132487"
 
 local PVP_NO = PVP .. " " .. NO
@@ -21,18 +19,12 @@ local function GetFormattedPVPTimer()
     return string.format("%d:%02d", timeLeft / 60, timeLeft % 60)
 end
 
-local function ldbPVPToggle_OnClick(frame, button)
+local function ldbPVPToggle_OnClick(_, button)
     if not IsShiftKeyDown() then
         eventFrame:GetScript("OnEvent")(eventFrame)
         return
     end
-    if button == "LeftButton" then
-        if not InCombatLockdown() then
-            TogglePVP()
-        else
-            print("Not Toggling PVP Flag in combat")
-        end
-    elseif button == "RightButton" then
+    if button == "RightButton" then
         if IsPVPTimerRunning() then
             local msg = string.format("PvP flag off - Time Left: %s", GetFormattedPVPTimer())
             if IsInRaid(LE_PARTY_CATEGORY_INSTANCE) then      --Instance Raid
@@ -56,14 +48,12 @@ local function ldbPVPToggle_OnTooltipShow(tooltip)
         (UnitIsPVP("player") and "|cFF00FF00PVP Flaged|r") or ("|cFFFF0000Not Flaged|r")
 
     if IsPVPTimerRunning() then
-        local timeLeft = (GetPVPTimer() / 1000)
         pvpDesired = string.format("%s - %s", pvpDesired, GetFormattedPVPTimer())
     end
     tooltip:AddDoubleLine("PvP Desired:", pvpDesired)
     tooltip:AddDoubleLine("Flagged State:", flaggedState)
     tooltip:AddLine("")
     tooltip:AddLine("Click to Force Update")
-    tooltip:AddLine("Shift-Left Click to Toggle PvP")
     tooltip:AddLine("Shift-Right Click to Announce Timer")
 end
 
@@ -86,7 +76,7 @@ eventFrame:RegisterEvent("ADDON_LOADED")
 
 eventFrame:SetScript(
     "OnEvent",
-    function(frame, event, ...)
+    function(frame)
         frame:Hide()
         ldbObject.text = ""
 
@@ -122,7 +112,7 @@ eventFrame:SetScript(
 
 eventFrame:SetScript(
     "OnUpdate",
-    function(frame, event, elapsed)
+    function()
         ldbObject.text = GetFormattedPVPTimer()
     end
 )
