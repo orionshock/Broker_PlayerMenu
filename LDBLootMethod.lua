@@ -1,54 +1,49 @@
---An LDB Feed to easily change loot methods and item quality
 local addonName, addon = ...
 
-if _G[addonName] ~= addon then
-    _G[addonName] = addon
-end
+-- Allowlist common WoW globals and silence language-server diagnostics for
+-- undefined globals/fields. This addon targets MoP Classic where many
+-- APIs remain as globals; suppressing these warnings avoids noisy editor
+-- diagnostics while keeping runtime behavior unchanged.
+-- luacheck: globals LeaveParty InviteUnit ConvertToRaid ConvertToParty ResetInstances C_PartyInfo Enum SetLootThreshold GetLootThreshold GetOptOutOfLoot GetDungeonDifficultyID GetRaidDifficultyID GetRaidRosterInfo UnitClass UnitInRaid UnitInParty IsInRaid IsInGroup UnitIsGroupLeader InCombatLockdown IsShiftKeyDown C_Timer GetInstanceBootTimeRemaining CreateColorFromHexString ITEM_QUALITY_COLORS RAID_CLASS_COLORS LOOT LOOT_FREE_FOR_ALL LOOT_ROUND_ROBIN LOOT_NEED_BEFORE_GREED LOOT_GROUP_LOOT LOOT_MASTER_LOOTER
+---@diagnostic disable: undefined-global, undefined-field
 
-local ldblootmethod = {} --Main Object--
+local ldblootmethod = {}
 addon.ldblootmethod = ldblootmethod
 local LibQTip = LibStub("LibQTip-1.0")
 local eventFrame = CreateFrame("Frame", nil, UIParent)
 ldblootmethod.eventFrame = eventFrame
 
---Reoccuring Elements--
 local currentLootMethod, currentLootThreshold, currentMasterLooterName, myTooltip
 
 local removeprefix = LOOT .. ": "
 local loot_method_strings = {
-    ["freeforall"] = LOOT_FREE_FOR_ALL:gsub(removeprefix, ""),
-    ["roundrobin"] = LOOT_ROUND_ROBIN:gsub(removeprefix, ""),
-    ["needbeforegreed"] = LOOT_NEED_BEFORE_GREED:gsub(removeprefix, ""),
-    ["group"] = LOOT_GROUP_LOOT:gsub(removeprefix, ""),
-    ["masterlooter"] = LOOT_MASTER_LOOTER:gsub(removeprefix, "")
+    [Enum.LootMethod.Freeforall] = LOOT_FREE_FOR_ALL:gsub(removeprefix, ""),
+    [Enum.LootMethod.Roundrobin] = LOOT_ROUND_ROBIN:gsub(removeprefix, ""),
+    [Enum.LootMethod.Needbeforegreed] = LOOT_NEED_BEFORE_GREED:gsub(removeprefix, ""),
+    [Enum.LootMethod.Group] = LOOT_GROUP_LOOT:gsub(removeprefix, ""),
+    [Enum.LootMethod.Masterlooter] = LOOT_MASTER_LOOTER:gsub(removeprefix, "")
 }
 
 local loot_method_strings_short = {
-    ["freeforall"] = "FFA",
-    ["roundrobin"] = "RR",
-    ["needbeforegreed"] = "NB4G",
-    ["group"] = "GrpLoot",
-    ["masterlooter"] = "ML"
+    [Enum.LootMethod.Freeforall] = "FFA",
+    [Enum.LootMethod.Roundrobin] = "RR",
+    [Enum.LootMethod.Needbeforegreed] = "NB4G",
+    [Enum.LootMethod.Group] = "GrpLoot",
+    [Enum.LootMethod.Masterlooter] = "ML"
 }
 
 local loot_method_sorted = {
-    "freeforall",
-    "group",
-    "masterlooter"
-}
-
-local loot_method_to_index = {
-    ["freeforall"] = 0,
-    ["group"] = 3,
-    ["masterlooter"] = 2,
+    Enum.LootMethod.Freeforall,
+    Enum.LootMethod.Group,
+    Enum.LootMethod.Masterlooter,
 }
 
 local Color = {
     ["Green"] = CreateColorFromHexString("FF20FF20"),
     ["Red"] = CreateColorFromHexString("FFFF2020"),
     ["Blue"] = CreateColorFromHexString("FF0070DD"),
-    ["Purple"] = CreateColorFromHexString("FFA020F0"), -- Purple
-    ["Orange"] = CreateColorFromHexString("FFFFA500")  -- Orange
+    ["Purple"] = CreateColorFromHexString("FFA020F0"),
+    ["Orange"] = CreateColorFromHexString("FFFFA500")
 }
 
 local RaidOrDungeonDifficultyLevel = {
@@ -71,24 +66,25 @@ local RaidOrDungeonDifficultyLevel = {
     [194] = Color.Red:WrapTextInColorCode("25 Heroic"),
     [237] = Color.Purple:WrapTextInColorCode("Celestial")
 }
+
 local RaidOrDungeonDifficultyShortName = {
     [000] = "",
-    [001] = Color.Green:WrapTextInColorCode("N"),   --"N" Normal Green
-    [002] = Color.Red:WrapTextInColorCode("H"),     --"H" Heroic Red
-    [003] = Color.Green:WrapTextInColorCode("10"),  --10 Normal Green
-    [004] = Color.Green:WrapTextInColorCode("25"),  --25 Normal Red
-    [005] = Color.Red:WrapTextInColorCode("10H"),   --10 Heroic Green
-    [006] = Color.Red:WrapTextInColorCode("25H"),   --25 Heroic Red
+    [001] = Color.Green:WrapTextInColorCode("N"),
+    [002] = Color.Red:WrapTextInColorCode("H"),
+    [003] = Color.Green:WrapTextInColorCode("10"),
+    [004] = Color.Green:WrapTextInColorCode("25"),
+    [005] = Color.Red:WrapTextInColorCode("10H"),
+    [006] = Color.Red:WrapTextInColorCode("25H"),
     [008] = Color.Orange:WrapTextInColorCode("Ch"),
-    [009] = Color.Blue:WrapTextInColorCode("40"),   --40 General Blue, Old World
-    [014] = Color.Blue:WrapTextInColorCode("GR"),   --General Raid, Blue, Old World - Just a Raid
-    [148] = Color.Blue:WrapTextInColorCode("20"),   --20 General Blue
-    [173] = Color.Green:WrapTextInColorCode("20N"), --20 Normal Mode, Green
-    [174] = Color.Red:WrapTextInColorCode("20H"),   --20 Heroic Red
-    [175] = Color.Green:WrapTextInColorCode("10"),  --10 General Green
-    [176] = Color.Red:WrapTextInColorCode("25"),    --25 General Red
-    [193] = Color.Green:WrapTextInColorCode("10"),  --10 General Green
-    [194] = Color.Red:WrapTextInColorCode("25"),    --25 General Red
+    [009] = Color.Blue:WrapTextInColorCode("40"),
+    [014] = Color.Blue:WrapTextInColorCode("GR"),
+    [148] = Color.Blue:WrapTextInColorCode("20"),
+    [173] = Color.Green:WrapTextInColorCode("20N"),
+    [174] = Color.Red:WrapTextInColorCode("20H"),
+    [175] = Color.Green:WrapTextInColorCode("10"),
+    [176] = Color.Red:WrapTextInColorCode("25"),
+    [193] = Color.Green:WrapTextInColorCode("10"),
+    [194] = Color.Red:WrapTextInColorCode("25"),
     [237] = Color.Purple:WrapTextInColorCode("Cel")
 }
 
@@ -96,8 +92,9 @@ local function tooltip_SetLootMethod(_, arg, button)
     if button == "LeftButton" then
         LibQTip:Release(myTooltip)
         myTooltip = nil
-        C_PartyInfo.SetLootMethod(loot_method_to_index[loot_method_sorted[arg]], currentMasterLooterName or "player",
-            currentLootThreshold)
+        local selectedEnum = loot_method_sorted[arg]
+        C_PartyInfo.SetLootMethod(selectedEnum, currentMasterLooterName or "player")
+        SetLootThreshold(currentLootThreshold)
     end
 end
 
@@ -119,8 +116,9 @@ local function tooltip_SetLootThreshold(_, arg, button)
     if button == "LeftButton" then
         LibQTip:Release(myTooltip)
         myTooltip = nil
-        if (currentLootMethod == "master") then
-            SetLootMethod("master", currentMasterLooterName or "player", arg)
+        if (currentLootMethod == Enum.LootMethod.Masterlooter) then
+            C_PartyInfo.SetLootMethod(Enum.LootMethod.Masterlooter, currentMasterLooterName or "player")
+            SetLootThreshold(arg)
         else
             SetLootThreshold(arg)
         end
@@ -202,12 +200,13 @@ local function populateTooltip_PartyLeader(tooltip)
     }
 
     for i = 1, #loot_method_sorted do
+        local ev = loot_method_sorted[i]
+        local display = loot_method_strings[ev] or "Unknown"
         local currentLine
-        if currentLootMethod == loot_method_sorted[i] then
-            currentLine = tooltip:AddLine(">> " .. loot_method_strings[loot_method_sorted[i]] .. " <<",
-                groupManage_Sorted[i])
+        if currentLootMethod == ev then
+            currentLine = tooltip:AddLine(">> " .. display .. " <<", groupManage_Sorted[i])
         else
-            currentLine = tooltip:AddLine(loot_method_strings[loot_method_sorted[i]], groupManage_Sorted[i])
+            currentLine = tooltip:AddLine(display, groupManage_Sorted[i])
         end
         tooltip:SetCellScript(currentLine, 1, "OnMouseUp", tooltip_SetLootMethod, i)
         if groupManage_Sorted[i] then
@@ -300,9 +299,9 @@ local function populateTooltip_PartyMember(tooltip)
     end
     tooltip:AddSeparator()
     --currentLootMethod, currentLootThreshold, currentMasterLooterName
-    tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod])
+    tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod] or "?")
     --if masterlooter - put the ML Name here
-    if (currentLootMethod == "masterlooter") and (currentMasterLooterName ~= "") then
+    if (currentLootMethod == Enum.LootMethod.Masterlooter) and (currentMasterLooterName ~= "") then
         local _, class = UnitClass(currentMasterLooterName)
         if class then
             tooltip:AddLine("Loot Master", RAID_CLASS_COLORS[class]:WrapTextInColorCode(currentMasterLooterName))
@@ -343,7 +342,7 @@ local function populateTooltip_Solo(tooltip)
 
             tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 8), "")
             tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 8)
-            
+
             tooltip:AddSeparator()
         end
 
@@ -410,7 +409,7 @@ local fmt_Loot_ML_String = fmt_shortInstanceDisplay ..
     " %s: %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] ML: MasterLooter_Name (LootThreshold) OptOutFlag
 
 local function get_LDB_Text(mlName, class)
-    local loot_method = loot_method_strings_short[currentLootMethod]
+    local loot_method = loot_method_strings_short[currentLootMethod] or "?"
     local loot_threshold = ITEM_QUALITY_COLORS[currentLootThreshold].color:WrapTextInColorCode(_G
         ["ITEM_QUALITY" .. currentLootThreshold .. "_DESC"]:sub(1, 1))
     local optOut = GetOptOutOfLoot() and "*" or ""
@@ -431,15 +430,7 @@ local function get_LDB_Text(mlName, class)
     end
 end
 
-local reverseLootMethod = {}
-for k, v in pairs(Enum.LootMethod) do
-    reverseLootMethod[v] = k
-end
-
-function GetLootMethod()
-    local m = reverseLootMethod[C_PartyInfo.GetLootMethod()]
-    return m and m:lower()
-end
+-- Removed reverseLootMethod as it is no longer needed
 
 local ldbObject = {
     type = "data source",
@@ -463,7 +454,14 @@ eventFrame:RegisterEvent("INSTANCE_BOOT_STOP")
 eventFrame:SetScript(
     "OnEvent",
     function(self, event)
-        currentLootMethod = GetLootMethod() or "group"
+        do
+            local lm = C_PartyInfo.GetLootMethod()
+            if type(lm) == "number" then
+                currentLootMethod = lm
+            else
+                currentLootMethod = Enum.LootMethod.Group
+            end
+        end
         currentLootThreshold = GetLootThreshold() or "2"
 
         if event == "RightButton" then
@@ -480,7 +478,7 @@ eventFrame:SetScript(
                 currentMasterLooterName = nil
             end
 
-            if currentLootMethod == "masterlooter" then
+            if currentLootMethod == Enum.LootMethod.Masterlooter then
                 for i = 1, 40 do
                     local name, _, _, _, _, class, _, _, _, _, isML = GetRaidRosterInfo(i)
                     if isML and name then
