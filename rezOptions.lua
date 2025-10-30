@@ -6,6 +6,17 @@ end
 local rezOptions = {}
 addon.rezOptions = rezOptions
 
+---
+-- RezOptions module - helper functions to populate a LibQTip tooltip with
+-- resurrection-related options (accept rez, retrieve corpse, self-rez, release).
+-- @module rezOptions
+-- @field eventFrame Frame The frame used for event handling
+-- @field myTooltip table|nil Current LibQTip tooltip instance (or nil)
+-- @field resurrectRequesterName string|nil Name of the player who requested resurrection
+-- @field corpseInRange boolean Whether the player's corpse is in range
+-- @field playerDeadInCorpse boolean Whether the player is dead on their corpse
+---
+
 local eventFrame = CreateFrame("Frame", nil, UIParent)
 rezOptions.eventFrame = eventFrame
 local LibQTip = LibStub("LibQTip-1.0")
@@ -15,17 +26,30 @@ local resurrectRequesterName = nil
 local corpseInRange = false
 local playerDeadInCorpse = false
 
+--- Add a tooltip line that allows the player to retrieve their corpse.
+-- @local
+-- @tparam table tooltip LibQTip tooltip object
 local function populateTooltip_RetrieveCorpse(tooltip)
     local currentLine = tooltip:AddLine(RECOVER_CORPSE)
     tooltip:SetLineScript(currentLine, "OnMouseUp", RetrieveCorpse)
 end
 
+--- Handle choosing a self-resurrect option from the tooltip.
+-- This calls the Blizzard API to use the selected self-resurrect.
+-- @local
+-- @tparam Frame frame The frame the tooltip line belongs to
+-- @tparam table info Table with fields 'optionType' and 'id'
+-- @tparam string|number button Mouse/button identifier passed by LibQTip
 local function DoSelfRez(frame, info, button)
     if info then
         C_DeathInfo.UseSelfResurrectOption(info.optionType, info.id)
     end
 end
 
+--- Populate tooltip with available self-resurrect options.
+-- Each line will call DoSelfRez when clicked.
+-- @local
+-- @tparam table tooltip LibQTip tooltip object
 local function populateTooltip_SelfRez(tooltip)
     local selfRezOptions = C_DeathInfo.GetSelfResurrectOptions()
     for i = 1, #selfRezOptions do
@@ -35,27 +59,48 @@ local function populateTooltip_SelfRez(tooltip)
     end
 end
 
+--- Add a tooltip line to allow the player to release spirit (if dead).
+-- @local
+-- @tparam table tooltip LibQTip tooltip object
 local function populateTooltip_PlayerIsDead(tooltip)
     local currentLine = tooltip:AddLine(DEATH_RELEASE)
     tooltip:SetLineScript(currentLine, "OnMouseUp", RepopMe)
 end
 
+--- Populate tooltip with an Accept Resurrect option for another player's rez.
+-- Formats the global RESURRECT_REQUEST_NO_SICKNESS string with the
+-- `resurrectRequesterName` (falls back to a small sentinel string).
+-- Clicking the line will accept the resurrect and clear the stored name.
+-- @local
+-- @tparam table tooltip LibQTip tooltip object
 local function populateTooltip_OtherRez(tooltip)
     if resurrectRequesterName == "" or resurrectRequesterName == nil then
         resurrectRequesterName = "?UnknownRezer"
     end
     local text = string.format(RESURRECT_REQUEST_NO_SICKNESS, resurrectRequesterName)
     local currentLine = tooltip:AddLine(text)
+    -- Use a small wrapper so we can clear the cached name after accepting.
     tooltip:SetLineScript(currentLine, "OnMouseUp", function()
         resurrectRequesterName = nil; AcceptResurrect()
     end)
 end
 
+--- Called when the mouse leaves the RezOptions tooltip; releases it.
+-- @local
+-- @tparam table self The tooltip frame passed by LibQTip's auto-hide
 local function RezOptions_OnLeave(self)
     LibQTip:Release(myTooltip)
     myTooltip = nil
 end
 
+--- Tooltip OnEnter handler; builds the tooltip body depending on state.
+-- This function will add lines for:
+-- * Accepting another player's resurrection (when ResurrectHasTimer())
+-- * Retrieving a corpse if in range
+-- * Self-resurrect options
+-- * Releasing spirit when dead
+-- @local
+-- @tparam Frame frame The UI frame that triggered the OnEnter
 local function RezOptions_OnEnter(frame)
     if myTooltip and myTooltip:IsShown() then
         return
