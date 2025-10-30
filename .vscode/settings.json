@@ -40,7 +40,8 @@
         "LFDQueueFrameRandomCooldownFrame_Update",
         "LFDQueueFrameRandomCooldownFrame_OnEvent",
         "RunNextFrame",
-        "PLAYER_DIFFICULTY5"
+        "PLAYER_DIFFICULTY5",
+        "RESURRECT_REQUEST_NO_SICKNESS"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

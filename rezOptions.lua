@@ -9,11 +9,11 @@ addon.rezOptions = rezOptions
 local eventFrame = CreateFrame("Frame", nil, UIParent)
 rezOptions.eventFrame = eventFrame
 local LibQTip = LibStub("LibQTip-1.0")
+
 local myTooltip
----states to keep track of
+local resurrectRequesterName = nil
 local corpseInRange = false
 local playerDeadInCorpse = false
----
 
 local function populateTooltip_RetrieveCorpse(tooltip)
     local currentLine = tooltip:AddLine(RECOVER_CORPSE)
@@ -40,6 +40,17 @@ local function populateTooltip_PlayerIsDead(tooltip)
     tooltip:SetLineScript(currentLine, "OnMouseUp", RepopMe)
 end
 
+local function populateTooltip_OtherRez(tooltip)
+    if resurrectRequesterName == "" or resurrectRequesterName == nil then
+        resurrectRequesterName = "?UnknownRezer"
+    end
+    local text = string.format(RESURRECT_REQUEST_NO_SICKNESS, resurrectRequesterName)
+    local currentLine = tooltip:AddLine(text)
+    tooltip:SetLineScript(currentLine, "OnMouseUp", function()
+        resurrectRequesterName = nil; AcceptResurrect()
+    end)
+end
+
 local function RezOptions_OnLeave(self)
     LibQTip:Release(myTooltip)
     myTooltip = nil
@@ -54,8 +65,11 @@ local function RezOptions_OnEnter(frame)
         return
     end
     myTooltip = tooltip
-
     local showingTooltip = false
+    if ResurrectHasTimer() then
+        showingTooltip = true
+        populateTooltip_OtherRez(tooltip)
+    end
     if corpseInRange then
         showingTooltip = true
         populateTooltip_RetrieveCorpse(tooltip)
@@ -79,7 +93,6 @@ end
 --LDB OBJECT--
 local ldbObject = {
     type = "data source",
-    --	text = get_LDB_Text(),
     label = "RezOptions",
     icon = "135955",
     OnEnter = RezOptions_OnEnter
@@ -100,19 +113,28 @@ eventFrame:SetScript(
 eventFrame:RegisterEvent("CORPSE_IN_RANGE")
 eventFrame:RegisterEvent("CORPSE_OUT_OF_RANGE")
 eventFrame:RegisterEvent("PLAYER_DEAD")
+eventFrame:RegisterEvent("RESURRECT_REQUEST")
 
 
 function rezOptions:CORPSE_IN_RANGE(event)
     corpseInRange = true
 end
+
 function rezOptions:CORPSE_OUT_OF_RANGE(event)
     corpseInRange = false
 end
+
 function rezOptions:PLAYER_DEAD(event)
     eventFrame:Show()
 end
+
 function rezOptions:PLAYER_ALIVE(event)
     eventFrame:Hide()
+end
+
+-- Capture the name (first arg) from a resurrection request event
+function rezOptions:RESURRECT_REQUEST(event, requesterName)
+    resurrectRequesterName = requesterName
 end
 
 eventFrame.interval = 0
@@ -120,7 +142,7 @@ eventFrame:SetScript("OnUpdate", function(self, elapsed)
     self.interval = self.interval + elapsed
     if GetReleaseTimeRemaining() then
         if self.interval > 1 then
-            ldbObject.text = SecondsToTime( GetReleaseTimeRemaining() )
+            ldbObject.text = SecondsToTime(GetReleaseTimeRemaining())
             self.interval = 0
         end
     else
