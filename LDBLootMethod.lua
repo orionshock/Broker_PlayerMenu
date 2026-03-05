@@ -56,6 +56,8 @@ local RaidOrDungeonDifficultyLevel = {
     [006] = Color.Red:WrapTextInColorCode("25 Heroic"),
     [008] = Color.Orange:WrapTextInColorCode(PLAYER_DIFFICULTY5),
     [009] = "40 Player",
+    [011] = Color.Red:WrapTextInColorCode("Heroic Scenario"),
+    [012] = Color.Green:WrapTextInColorCode("NormalScenario"),
     [014] = "General Raid",
     [148] = "20 Player",
     [173] = Color.Green:WrapTextInColorCode(DUNGEON_DIFFICULTY1),
@@ -77,6 +79,8 @@ local RaidOrDungeonDifficultyShortName = {
     [006] = Color.Red:WrapTextInColorCode("25H"),
     [008] = Color.Orange:WrapTextInColorCode("Ch"),
     [009] = Color.Blue:WrapTextInColorCode("40"),
+    [011] = Color.Red:WrapTextInColorCode("HS"),
+    [012] = Color.Green:WrapTextInColorCode("NS"),
     [014] = Color.Blue:WrapTextInColorCode("GR"),
     [148] = Color.Blue:WrapTextInColorCode("20"),
     [173] = Color.Green:WrapTextInColorCode("20N"),
@@ -429,8 +433,6 @@ local function get_LDB_Text(mlName, class)
             RaidOrDungeonDifficultyShortName[raidDifficultyID] or "¿", loot_method, loot_threshold, optOut)
     end
 end
-
--- Removed reverseLootMethod as it is no longer needed
 
 local ldbObject = {
     type = "data source",
