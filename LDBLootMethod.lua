@@ -420,11 +420,15 @@ local function get_LDB_Text(mlName, class)
     local dungeonDifficultyID = (GetDungeonDifficultyID() ~= 0 and GetDungeonDifficultyID()) or 1
     local raidDifficultyID = (GetRaidDifficultyID() ~= 0 and GetRaidDifficultyID()) or 14
     if mlName then
+        local masterLooterText = mlName
+        if class and RAID_CLASS_COLORS[class] then
+            masterLooterText = RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName)
+        end
         return fmt_Loot_ML_String:format(
             RaidOrDungeonDifficultyShortName[dungeonDifficultyID] or "?",
             RaidOrDungeonDifficultyShortName[raidDifficultyID] or "¿",
             loot_method,
-            RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName),
+            masterLooterText,
             loot_threshold,
             optOut
         )
