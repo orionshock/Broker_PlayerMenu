@@ -41,7 +41,7 @@ end
 -- @tparam table info Table with fields 'optionType' and 'id'
 -- @tparam string|number button Mouse/button identifier passed by LibQTip
 local function DoSelfRez(frame, info, button)
-    if info then
+    if info and info.canUse then
         C_DeathInfo.UseSelfResurrectOption(info.optionType, info.id)
     end
 end
@@ -51,11 +51,13 @@ end
 -- @local
 -- @tparam table tooltip LibQTip tooltip object
 local function populateTooltip_SelfRez(tooltip)
-    local selfRezOptions = C_DeathInfo.GetSelfResurrectOptions()
+    local selfRezOptions = C_DeathInfo.GetSelfResurrectOptions() or {}
     for i = 1, #selfRezOptions do
         local info = selfRezOptions[i]
-        local currentLine = tooltip:AddLine(info.name)
-        tooltip:SetLineScript(currentLine, "OnMouseUp", DoSelfRez, info)
+        if info.canUse then
+            local currentLine = tooltip:AddLine(info.name)
+            tooltip:SetLineScript(currentLine, "OnMouseUp", DoSelfRez, info)
+        end
     end
 end
 
@@ -119,9 +121,12 @@ local function RezOptions_OnEnter(frame)
         showingTooltip = true
         populateTooltip_RetrieveCorpse(tooltip)
     end
-    if C_DeathInfo.GetSelfResurrectOptions() then
-        showingTooltip = true
-        populateTooltip_SelfRez(tooltip)
+    for _, info in ipairs(C_DeathInfo.GetSelfResurrectOptions() or {}) do
+        if info.canUse then
+            showingTooltip = true
+            populateTooltip_SelfRez(tooltip)
+            break
+        end
     end
     if UnitIsDead("player") then
         showingTooltip = true
@@ -132,6 +137,8 @@ local function RezOptions_OnEnter(frame)
         tooltip:SetAutoHideDelay(.01, frame, RezOptions_OnLeave)
         tooltip:SmartAnchorTo(frame)
         tooltip:Show()
+    else
+        RezOptions_OnLeave()
     end
 end
 
@@ -158,6 +165,9 @@ eventFrame:SetScript(
 eventFrame:RegisterEvent("CORPSE_IN_RANGE")
 eventFrame:RegisterEvent("CORPSE_OUT_OF_RANGE")
 eventFrame:RegisterEvent("PLAYER_DEAD")
+eventFrame:RegisterEvent("PLAYER_ALIVE")
+eventFrame:RegisterEvent("PLAYER_UNGHOST")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:RegisterEvent("RESURRECT_REQUEST")
 
 
@@ -175,6 +185,19 @@ end
 
 function rezOptions:PLAYER_ALIVE(event)
     eventFrame:Hide()
+    corpseInRange = false
+    resurrectRequesterName = nil
+    ldbObject.text = ""
+    RezOptions_OnLeave()
+end
+
+rezOptions.PLAYER_UNGHOST = rezOptions.PLAYER_ALIVE
+function rezOptions:PLAYER_ENTERING_WORLD()
+    if UnitIsDead("player") then
+        self:PLAYER_DEAD()
+    else
+        self:PLAYER_ALIVE()
+    end
 end
 
 -- Capture the name (first arg) from a resurrection request event
@@ -185,9 +208,10 @@ end
 eventFrame.interval = 0
 eventFrame:SetScript("OnUpdate", function(self, elapsed)
     self.interval = self.interval + elapsed
-    if GetReleaseTimeRemaining() then
+    local remaining = GetReleaseTimeRemaining()
+    if remaining and remaining > 0 then
         if self.interval > 1 then
-            ldbObject.text = SecondsToTime(GetReleaseTimeRemaining())
+            ldbObject.text = SecondsToTime(remaining)
             self.interval = 0
         end
     else
@@ -195,3 +219,5 @@ eventFrame:SetScript("OnUpdate", function(self, elapsed)
         self:Hide()
     end
 end)
+
+eventFrame:Hide()

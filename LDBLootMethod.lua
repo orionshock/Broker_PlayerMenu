@@ -1,12 +1,6 @@
 local addonName, addon = ...
 
--- Allowlist common WoW globals and silence language-server diagnostics for
--- undefined globals/fields. This addon targets MoP Classic where many
--- APIs remain as globals; suppressing these warnings avoids noisy editor
--- diagnostics while keeping runtime behavior unchanged.
--- luacheck: globals LeaveParty InviteUnit ConvertToRaid ConvertToParty ResetInstances C_PartyInfo Enum SetLootThreshold GetLootThreshold GetOptOutOfLoot GetDungeonDifficultyID GetRaidDifficultyID GetRaidRosterInfo UnitClass UnitInRaid UnitInParty IsInRaid IsInGroup UnitIsGroupLeader InCombatLockdown IsShiftKeyDown C_Timer GetInstanceBootTimeRemaining CreateColorFromHexString ITEM_QUALITY_COLORS RAID_CLASS_COLORS LOOT LOOT_FREE_FOR_ALL LOOT_ROUND_ROBIN LOOT_NEED_BEFORE_GREED LOOT_GROUP_LOOT LOOT_MASTER_LOOTER
----@diagnostic disable: undefined-global, undefined-field
-
+-- WoW Forever uses the enum-based C_PartyInfo loot API.
 local ldblootmethod = {}
 addon.ldblootmethod = ldblootmethod
 local LibQTip = LibStub("LibQTip-1.0")
@@ -38,59 +32,26 @@ local loot_method_sorted = {
     Enum.LootMethod.Masterlooter,
 }
 
-local Color = {
-    ["Green"] = CreateColorFromHexString("FF20FF20"),
-    ["Red"] = CreateColorFromHexString("FFFF2020"),
-    ["Blue"] = CreateColorFromHexString("FF0070DD"),
-    ["Purple"] = CreateColorFromHexString("FFA020F0"),
-    ["Orange"] = CreateColorFromHexString("FFFFA500")
-}
+local RaidOrDungeonDifficultyLevel = setmetatable({}, {
+    __index = function(_, id)
+        local name, _, isHeroic = GetDifficultyInfo(id)
+        if not name then
+            return "?"
+        end
+        return (isHeroic and "|cFFFF2020" or "|cFF20FF20") .. name .. "|r"
+    end
+})
 
-local RaidOrDungeonDifficultyLevel = {
-    [000] = "",
-    [001] = Color.Green:WrapTextInColorCode(DUNGEON_DIFFICULTY1),
-    [002] = Color.Red:WrapTextInColorCode(DUNGEON_DIFFICULTY2),
-    [003] = Color.Green:WrapTextInColorCode("10 Normal"),
-    [004] = Color.Green:WrapTextInColorCode("25 Normal"),
-    [005] = Color.Red:WrapTextInColorCode("10 Heroic"),
-    [006] = Color.Red:WrapTextInColorCode("25 Heroic"),
-    [008] = Color.Orange:WrapTextInColorCode(PLAYER_DIFFICULTY5),
-    [009] = "40 Player",
-    [011] = Color.Red:WrapTextInColorCode("Heroic Scenario"),
-    [012] = Color.Green:WrapTextInColorCode("NormalScenario"),
-    [014] = "General Raid",
-    [148] = "20 Player",
-    [173] = Color.Green:WrapTextInColorCode(DUNGEON_DIFFICULTY1),
-    [174] = Color.Red:WrapTextInColorCode(DUNGEON_DIFFICULTY2),
-    [175] = Color.Green:WrapTextInColorCode(RAID_DIFFICULTY1),
-    [176] = Color.Green:WrapTextInColorCode(RAID_DIFFICULTY2),
-    [193] = Color.Red:WrapTextInColorCode("10 Heroic"),
-    [194] = Color.Red:WrapTextInColorCode("25 Heroic"),
-    [237] = Color.Purple:WrapTextInColorCode("Celestial")
-}
-
-local RaidOrDungeonDifficultyShortName = {
-    [000] = "",
-    [001] = Color.Green:WrapTextInColorCode("N"),
-    [002] = Color.Red:WrapTextInColorCode("H"),
-    [003] = Color.Green:WrapTextInColorCode("10"),
-    [004] = Color.Green:WrapTextInColorCode("25"),
-    [005] = Color.Red:WrapTextInColorCode("10H"),
-    [006] = Color.Red:WrapTextInColorCode("25H"),
-    [008] = Color.Orange:WrapTextInColorCode("Ch"),
-    [009] = Color.Blue:WrapTextInColorCode("40"),
-    [011] = Color.Red:WrapTextInColorCode("HS"),
-    [012] = Color.Green:WrapTextInColorCode("NS"),
-    [014] = Color.Blue:WrapTextInColorCode("GR"),
-    [148] = Color.Blue:WrapTextInColorCode("20"),
-    [173] = Color.Green:WrapTextInColorCode("20N"),
-    [174] = Color.Red:WrapTextInColorCode("20H"),
-    [175] = Color.Green:WrapTextInColorCode("10"),
-    [176] = Color.Red:WrapTextInColorCode("25"),
-    [193] = Color.Green:WrapTextInColorCode("10"),
-    [194] = Color.Red:WrapTextInColorCode("25"),
-    [237] = Color.Purple:WrapTextInColorCode("Cel")
-}
+local RaidOrDungeonDifficultyShortName = setmetatable({
+    [0] = "",
+    [1] = "N",
+    [2] = "H",
+    [9] = "40",
+    [242] = "20",
+    [243] = "10",
+}, {
+    __index = function(_, id) return GetDifficultyInfo(id) or "?" end
+})
 
 local function tooltip_SetLootMethod(_, arg, button)
     if button == "LeftButton" then
@@ -130,7 +91,7 @@ local function tooltip_SetLootThreshold(_, arg, button)
 end
 
 local function tooltip_SetDungeonDifficultyID(_, arg, button)
-    if button == "LeftButton" then
+    if button == "LeftButton" and select(11, GetDifficultyInfo(arg)) and DifficultyUtil.IsDungeonDifficultyEnabled(arg) then
         LibQTip:Release(myTooltip)
         myTooltip = nil
         SetDungeonDifficultyID(arg)
@@ -138,7 +99,7 @@ local function tooltip_SetDungeonDifficultyID(_, arg, button)
 end
 
 local function tooltip_SetRaidDifficultyID(_, arg, button)
-    if button == "LeftButton" then
+    if button == "LeftButton" and select(11, GetDifficultyInfo(arg)) and DifficultyUtil.IsRaidDifficultyEnabled(arg) then
         LibQTip:Release(myTooltip)
         myTooltip = nil
         SetRaidDifficultyID(arg)
@@ -181,12 +142,42 @@ local function tooltip_GhettoRaid()
     end
 end
 
-local fmt_GetFormatedInstanceType = DARKYELLOW_FONT_COLOR:WrapTextInColorCode(">> %s <<")
-local function GetFormatedInstanceType(currentDungeonDifficulty, index)
-    if index == currentDungeonDifficulty then
-        return fmt_GetFormatedInstanceType:format(RaidOrDungeonDifficultyLevel[index])
-    else
-        return RaidOrDungeonDifficultyLevel[index]
+local function populateTooltip_Difficulties(tooltip)
+    -- Forever marks selectable difficulties in GetDifficultyInfo, just like
+    -- the default UI's Camelot DifficultyUtil override.
+    local sorted, seen = {}, {}
+    for _, id in pairs(DifficultyUtil.ID) do
+        if not seen[id] then
+            seen[id] = true
+            sorted[#sorted + 1] = id
+        end
+    end
+    table.sort(sorted)
+    for _, category in ipairs({ "party", "raid" }) do
+        local headerAdded = false
+        for _, id in ipairs(sorted) do
+            local name, instanceType = GetDifficultyInfo(id)
+            local selectable = select(11, GetDifficultyInfo(id))
+            if name and selectable and instanceType == category then
+                if not headerAdded then
+                    tooltip:AddSeparator(8)
+                    local line = tooltip:AddHeader("")
+                    tooltip:SetCell(line, 1, category == "party" and DUNGEON_DIFFICULTY or RAID_DIFFICULTY,
+                        nil, "CENTER", 2)
+                    headerAdded = true
+                end
+                local current = category == "party" and GetDungeonDifficultyID() or GetRaidDifficultyID()
+                local text = current == id and (">> " .. name .. " <<") or name
+                local line = tooltip:AddLine("")
+                tooltip:SetCell(line, 1, text, nil, "CENTER", 2)
+                local enabled = category == "party" and DifficultyUtil.IsDungeonDifficultyEnabled(id)
+                    or category == "raid" and DifficultyUtil.IsRaidDifficultyEnabled(id)
+                if enabled then
+                    tooltip:SetLineScript(line, "OnMouseUp", category == "party"
+                        and tooltip_SetDungeonDifficultyID or tooltip_SetRaidDifficultyID, id)
+                end
+            end
+        end
     end
 end
 
@@ -250,38 +241,7 @@ local function populateTooltip_PartyLeader(tooltip)
     end
 
 
-    --Dungeon Normal/Heroic
-    local currentDungeonDifficulty = GetDungeonDifficultyID()
-    if (currentDungeonDifficulty ~= nil) and (currentDungeonDifficulty ~= 0) then
-        tooltip:AddSeparator(8)
-        tipLine = tooltip:AddHeader(DUNGEON_DIFFICULTY)
-        tooltip:SetCell(tipLine, 1, DUNGEON_DIFFICULTY, nil, "CENTER", 2)
-
-        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 1),
-            GetFormatedInstanceType(currentDungeonDifficulty, 2))
-        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
-        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
-
-        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 8), "")
-        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 8)
-    end
-
-    --Raid Difficluty { 10N   25N }, {10H   25H}
-
-    local currentRaidDifficulty = GetRaidDifficultyID()
-    if (currentRaidDifficulty ~= nil) and (currentRaidDifficulty ~= 0) then
-        tooltip:AddSeparator()
-        tipLine = tooltip:AddHeader(RAID_DIFFICULTY)
-        tooltip:SetCell(tipLine, 1, RAID_DIFFICULTY, nil, "CENTER", 2)
-        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 3),
-            GetFormatedInstanceType(currentRaidDifficulty, 4))
-        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
-        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
-        tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 5),
-            GetFormatedInstanceType(currentRaidDifficulty, 6))
-        tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 5)
-        tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 6)
-    end
+    populateTooltip_Difficulties(tooltip)
     tooltip:AddSeparator(8)
 
     local currentLine = tooltip:AddLine(1)
@@ -333,38 +293,7 @@ local function populateTooltip_Solo(tooltip)
         tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_GhettoRaid)
         tooltip:AddSeparator(4)
 
-        --Dungeon Normal/Heroic
-        local currentDungeonDifficulty = GetDungeonDifficultyID()
-        if (currentDungeonDifficulty ~= nil) and (currentDungeonDifficulty ~= 0) then
-            tipLine = tooltip:AddHeader(DUNGEON_DIFFICULTY)
-            tooltip:SetCell(tipLine, 1, DUNGEON_DIFFICULTY, nil, "CENTER", 2)
-
-            tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 1),
-                GetFormatedInstanceType(currentDungeonDifficulty, 2))
-            tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 1)
-            tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetDungeonDifficultyID, 2)
-
-            tipLine = tooltip:AddLine(GetFormatedInstanceType(currentDungeonDifficulty, 8), "")
-            tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetDungeonDifficultyID, 8)
-
-            tooltip:AddSeparator()
-        end
-
-        --Raid Difficluty { 10N   25N }, {10H   25H}
-        local currentRaidDifficulty = GetRaidDifficultyID()
-        if (currentRaidDifficulty ~= nil) and (currentRaidDifficulty ~= 0) then
-            tipLine = tooltip:AddHeader(RAID_DIFFICULTY)
-            tooltip:SetCell(tipLine, 1, RAID_DIFFICULTY, nil, "CENTER", 2)
-            tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 3),
-                GetFormatedInstanceType(currentRaidDifficulty, 4))
-            tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 3)
-            tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 4)
-            tipLine = tooltip:AddLine(GetFormatedInstanceType(currentRaidDifficulty, 5),
-                GetFormatedInstanceType(currentRaidDifficulty, 6))
-            tooltip:SetCellScript(tipLine, 1, "OnMouseUp", tooltip_SetRaidDifficultyID, 5)
-            tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_SetRaidDifficultyID, 6)
-            tooltip:AddSeparator(8)
-        end
+        populateTooltip_Difficulties(tooltip)
 
         --Instance Reset / Instructions
         local currentLine = tooltip:AddLine(RESET_INSTANCES, "(Shift Click alot)")
@@ -418,7 +347,7 @@ local function get_LDB_Text(mlName, class)
         ["ITEM_QUALITY" .. currentLootThreshold .. "_DESC"]:sub(1, 1))
     local optOut = GetOptOutOfLoot() and "*" or ""
     local dungeonDifficultyID = (GetDungeonDifficultyID() ~= 0 and GetDungeonDifficultyID()) or 1
-    local raidDifficultyID = (GetRaidDifficultyID() ~= 0 and GetRaidDifficultyID()) or 14
+    local raidDifficultyID = (GetRaidDifficultyID() ~= 0 and GetRaidDifficultyID()) or 0
     if mlName then
         local masterLooterText = mlName
         if class and RAID_CLASS_COLORS[class] then
@@ -468,7 +397,7 @@ eventFrame:SetScript(
                 currentLootMethod = Enum.LootMethod.Group
             end
         end
-        currentLootThreshold = GetLootThreshold() or "2"
+        currentLootThreshold = GetLootThreshold() or 2
 
         if event == "RightButton" then
             SetOptOutOfLoot(not GetOptOutOfLoot())
@@ -480,18 +409,18 @@ eventFrame:SetScript(
             self:Hide()
         end
         if IsInRaid() or IsInGroup() then
-            if not (UnitInRaid(currentMasterLooterName) or UnitInParty(currentMasterLooterName)) then
+            if currentMasterLooterName and not (UnitInRaid(currentMasterLooterName) or UnitInParty(currentMasterLooterName)) then
                 currentMasterLooterName = nil
             end
 
             if currentLootMethod == Enum.LootMethod.Masterlooter then
-                for i = 1, 40 do
-                    local name, _, _, _, _, class, _, _, _, _, isML = GetRaidRosterInfo(i)
-                    if isML and name then
-                        ldbObject.text = get_LDB_Text(name, class)
-                        currentMasterLooterName = name
-                    end
-                end
+                local _, partyID, raidID = C_PartyInfo.GetLootMethod()
+                local unit = raidID and ("raid" .. raidID)
+                    or (partyID == 0 and "player")
+                    or (partyID and ("party" .. partyID))
+                currentMasterLooterName = unit and GetUnitName(unit, true) or nil
+                local _, class = UnitClass(unit or "player")
+                ldbObject.text = get_LDB_Text(currentMasterLooterName, class)
             else
                 ldbObject.text = get_LDB_Text()
             end
@@ -505,7 +434,12 @@ eventFrame:SetScript(
     end
 )
 
-ldbObject.OnClick = eventFrame:GetScript("OnEvent")
+ldbObject.OnClick = function(_, button)
+    eventFrame:GetScript("OnEvent")(eventFrame, button)
+end
+eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+eventFrame:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
+eventFrame:Hide()
 
 local timeElapsed = 0
 eventFrame:SetScript(
@@ -515,8 +449,9 @@ eventFrame:SetScript(
         if timeElapsed > 1 then
             timeElapsed = 0
             local bootTime = GetInstanceBootTimeRemaining()
-            if bootTime == 0 then
+            if not bootTime or bootTime <= 0 then
                 self:Hide()
+                self:GetScript("OnEvent")(self, "INSTANCE_BOOT_STOP")
             else
                 ldbObject.text = string.format("Boot: %s", bootTime)
             end

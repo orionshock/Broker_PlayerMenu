@@ -15,12 +15,14 @@ local PVP_NO = PVP .. " " .. NO
 local PVP_YES = PVP .. " " .. YES
 
 local function GetFormattedPVPTimer()
-    local timeLeft = (GetPVPTimer() / 1000)
-    return string.format("%d:%02d", timeLeft / 60, timeLeft % 60)
+    local timeLeft = math.max(0, math.floor(GetPVPTimer() / 1000))
+    return string.format("%d:%02d", math.floor(timeLeft / 60), timeLeft % 60)
 end
 
 local function ldbPVPToggle_OnClick(_, button)
-    if not IsShiftKeyDown() then
+    if button == "LeftButton" and IsShiftKeyDown() then
+        C_PvP.TogglePVP()
+    elseif not IsShiftKeyDown() then
         eventFrame:GetScript("OnEvent")(eventFrame)
         return
     end
@@ -45,7 +47,7 @@ end
 local function ldbPVPToggle_OnTooltipShow(tooltip)
     local pvpDesired = GetPVPDesired() and "|cFF00FF00Yes|r" or "|cFFFF0000No|r"
     local flaggedState = (UnitIsPVPFreeForAll("player") and "|cFF00FF00FFA|r") or
-        (UnitIsPVP("player") and "|cFF00FF00PVP Flaged|r") or ("|cFFFF0000Not Flaged|r")
+        (UnitIsPVP("player") and "|cFF00FF00PVP Flagged|r") or ("|cFFFF0000Not Flagged|r")
 
     if IsPVPTimerRunning() then
         pvpDesired = string.format("%s - %s", pvpDesired, GetFormattedPVPTimer())
@@ -54,6 +56,7 @@ local function ldbPVPToggle_OnTooltipShow(tooltip)
     tooltip:AddDoubleLine("Flagged State:", flaggedState)
     tooltip:AddLine("")
     tooltip:AddLine("Click to Force Update")
+    tooltip:AddLine("Shift-Left Click to Toggle PvP")
     tooltip:AddLine("Shift-Right Click to Announce Timer")
 end
 
@@ -70,9 +73,8 @@ libLDB:NewDataObject("PVPToggle", ldbObject)
 
 eventFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-eventFrame:RegisterEvent("UPDATE_UI_WIDGET")
 eventFrame:RegisterEvent("ZONE_CHANGED")
-eventFrame:RegisterEvent("ADDON_LOADED")
+eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 eventFrame:SetScript(
     "OnEvent",
