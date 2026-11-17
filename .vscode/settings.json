@@ -1,5 +1,9 @@
 {
     "Lua.diagnostics.globals": [
+        "ConvertToRaid",
+        "ConvertToParty",
+        "LeaveParty",
+        "InviteUnit",
         "PVP",
         "NO",
         "YES",
@@ -36,13 +40,10 @@
         "LE_PARTY_CATEGORY_HOME",
         "LE_PARTY_CATEGORY_INSTANCE",
         "INSTANCE_CHAT",
-        "NUM_LE_LFG_CATEGORYS",
-        "LFDQueueFrameRandomCooldownFrame_Update",
-        "LFDQueueFrameRandomCooldownFrame_OnEvent",
         "RunNextFrame",
         "PLAYER_DIFFICULTY5",
         "RESURRECT_REQUEST_NO_SICKNESS",
-        "LE_LFG_CATEGORY_LFD"
+        "DEFAULT"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

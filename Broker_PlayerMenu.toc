@@ -12,4 +12,3 @@ libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 LDBLootMethod.lua
 ldbPVPToggle.lua
 rezOptions.lua
-RDF_Monitor.lua

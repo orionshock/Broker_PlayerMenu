@@ -15,7 +15,8 @@ local loot_method_strings = {
     [Enum.LootMethod.Roundrobin] = LOOT_ROUND_ROBIN:gsub(removeprefix, ""),
     [Enum.LootMethod.Needbeforegreed] = LOOT_NEED_BEFORE_GREED:gsub(removeprefix, ""),
     [Enum.LootMethod.Group] = LOOT_GROUP_LOOT:gsub(removeprefix, ""),
-    [Enum.LootMethod.Masterlooter] = LOOT_MASTER_LOOTER:gsub(removeprefix, "")
+    [Enum.LootMethod.Masterlooter] = LOOT_MASTER_LOOTER:gsub(removeprefix, ""),
+    [Enum.LootMethod.Personal] = DEFAULT
 }
 
 local loot_method_strings_short = {
@@ -23,52 +24,37 @@ local loot_method_strings_short = {
     [Enum.LootMethod.Roundrobin] = "RR",
     [Enum.LootMethod.Needbeforegreed] = "NB4G",
     [Enum.LootMethod.Group] = "GrpLoot",
-    [Enum.LootMethod.Masterlooter] = "ML"
+    [Enum.LootMethod.Masterlooter] = "ML",
+    [Enum.LootMethod.Personal] = "Personal"
 }
 
 local loot_method_sorted = {
     Enum.LootMethod.Freeforall,
-    Enum.LootMethod.Group,
+    Enum.LootMethod.Roundrobin,
     Enum.LootMethod.Masterlooter,
+    Enum.LootMethod.Group,
+    Enum.LootMethod.Needbeforegreed,
+    Enum.LootMethod.Personal,
 }
-
-local RaidOrDungeonDifficultyLevel = setmetatable({}, {
-    __index = function(_, id)
-        local name, _, isHeroic = GetDifficultyInfo(id)
-        if not name then
-            return "?"
-        end
-        return (isHeroic and "|cFFFF2020" or "|cFF20FF20") .. name .. "|r"
-    end
-})
-
-local RaidOrDungeonDifficultyShortName = setmetatable({
-    [0] = "",
-    [1] = "N",
-    [2] = "H",
-    [9] = "40",
-    [242] = "20",
-    [243] = "10",
-}, {
-    __index = function(_, id) return GetDifficultyInfo(id) or "?" end
-})
 
 local function tooltip_SetLootMethod(_, arg, button)
     if button == "LeftButton" then
         LibQTip:Release(myTooltip)
         myTooltip = nil
-        local selectedEnum = loot_method_sorted[arg]
-        C_PartyInfo.SetLootMethod(selectedEnum, currentMasterLooterName or "player")
-        SetLootThreshold(currentLootThreshold)
+        if C_PartyInfo.IsLootMethodAvailable(arg) then
+            local lootMaster = arg == Enum.LootMethod.Masterlooter
+                and (currentMasterLooterName or GetUnitName("player", true)) or nil
+            C_PartyInfo.SetLootMethod(arg, lootMaster)
+        end
     end
 end
 
 local function tooltip_GroupManageFunc(_, arg, button)
     if button == "LeftButton" and IsShiftKeyDown() then
         if arg == 1 then
-            ConvertToRaid()
+            C_PartyInfo.ConvertToRaid()
         elseif arg == 2 then
-            ConvertToParty()
+            C_PartyInfo.ConvertToParty()
         elseif arg == 3 then
             ResetInstances()
         end
@@ -81,28 +67,7 @@ local function tooltip_SetLootThreshold(_, arg, button)
     if button == "LeftButton" then
         LibQTip:Release(myTooltip)
         myTooltip = nil
-        if (currentLootMethod == Enum.LootMethod.Masterlooter) then
-            C_PartyInfo.SetLootMethod(Enum.LootMethod.Masterlooter, currentMasterLooterName or "player")
-            SetLootThreshold(arg)
-        else
-            SetLootThreshold(arg)
-        end
-    end
-end
-
-local function tooltip_SetDungeonDifficultyID(_, arg, button)
-    if button == "LeftButton" and select(11, GetDifficultyInfo(arg)) and DifficultyUtil.IsDungeonDifficultyEnabled(arg) then
-        LibQTip:Release(myTooltip)
-        myTooltip = nil
-        SetDungeonDifficultyID(arg)
-    end
-end
-
-local function tooltip_SetRaidDifficultyID(_, arg, button)
-    if button == "LeftButton" and select(11, GetDifficultyInfo(arg)) and DifficultyUtil.IsRaidDifficultyEnabled(arg) then
-        LibQTip:Release(myTooltip)
-        myTooltip = nil
-        SetRaidDifficultyID(arg)
+        SetLootThreshold(arg)
     end
 end
 
@@ -114,17 +79,17 @@ end
 
 local function tooltip_LeaveParty()
     if not InCombatLockdown() and IsShiftKeyDown() then
-        LeaveParty()
+        C_PartyInfo.LeaveParty()
     end
 end
 
 local function tooltip_GhettoHearth()
     if not InCombatLockdown() then
-        InviteUnit("a")
+        C_PartyInfo.InviteUnit("a")
         C_Timer.After(
             1,
             function()
-                LeaveParty()
+                C_PartyInfo.LeaveParty()
             end
         )
     end
@@ -132,52 +97,13 @@ end
 
 local function tooltip_GhettoRaid()
     if IsShiftKeyDown() then
-        InviteUnit("a")
+        C_PartyInfo.InviteUnit("a")
         C_Timer.After(
             1,
             function()
-                ConvertToRaid()
+                C_PartyInfo.ConvertToRaid()
             end
         )
-    end
-end
-
-local function populateTooltip_Difficulties(tooltip)
-    -- Forever marks selectable difficulties in GetDifficultyInfo, just like
-    -- the default UI's Camelot DifficultyUtil override.
-    local sorted, seen = {}, {}
-    for _, id in pairs(DifficultyUtil.ID) do
-        if not seen[id] then
-            seen[id] = true
-            sorted[#sorted + 1] = id
-        end
-    end
-    table.sort(sorted)
-    for _, category in ipairs({ "party", "raid" }) do
-        local headerAdded = false
-        for _, id in ipairs(sorted) do
-            local name, instanceType = GetDifficultyInfo(id)
-            local selectable = select(11, GetDifficultyInfo(id))
-            if name and selectable and instanceType == category then
-                if not headerAdded then
-                    tooltip:AddSeparator(8)
-                    local line = tooltip:AddHeader("")
-                    tooltip:SetCell(line, 1, category == "party" and DUNGEON_DIFFICULTY or RAID_DIFFICULTY,
-                        nil, "CENTER", 2)
-                    headerAdded = true
-                end
-                local current = category == "party" and GetDungeonDifficultyID() or GetRaidDifficultyID()
-                local text = current == id and (">> " .. name .. " <<") or name
-                local line = tooltip:AddLine("")
-                tooltip:SetCell(line, 1, text, nil, "CENTER", 2)
-                local enabled = category == "party" and DifficultyUtil.IsDungeonDifficultyEnabled(id)
-                    or category == "raid" and DifficultyUtil.IsRaidDifficultyEnabled(id)
-                if enabled then
-                    tooltip:SetLineScript(line, "OnMouseUp", category == "party"
-                        and tooltip_SetDungeonDifficultyID or tooltip_SetRaidDifficultyID, id)
-                end
-            end
-        end
     end
 end
 
@@ -194,54 +120,63 @@ local function populateTooltip_PartyLeader(tooltip)
         [3] = not IsInInstance() and RESET_INSTANCES or nil
     }
 
-    for i = 1, #loot_method_sorted do
-        local ev = loot_method_sorted[i]
-        local display = loot_method_strings[ev] or "Unknown"
+    local availableMethods = {}
+    for _, method in ipairs(loot_method_sorted) do
+        if C_PartyInfo.IsLootMethodAvailable(method) then
+            availableMethods[#availableMethods + 1] = method
+        end
+    end
+    for i = 1, math.max(#availableMethods, 3) do
+        local ev = availableMethods[i]
+        local display = loot_method_strings[ev] or ""
         local currentLine
         if currentLootMethod == ev then
             currentLine = tooltip:AddLine(">> " .. display .. " <<", groupManage_Sorted[i])
         else
             currentLine = tooltip:AddLine(display, groupManage_Sorted[i])
         end
-        tooltip:SetCellScript(currentLine, 1, "OnMouseUp", tooltip_SetLootMethod, i)
+        if ev then
+            tooltip:SetCellScript(currentLine, 1, "OnMouseUp", tooltip_SetLootMethod, ev)
+        end
         if groupManage_Sorted[i] then
             tooltip:SetCellScript(currentLine, 2, "OnMouseUp", tooltip_GroupManageFunc, i)
         end
     end
 
-    tooltip:AddSeparator(8)
+    if currentLootMethod ~= Enum.LootMethod.Personal
+        and C_PartyInfo.IsLootMethodAvailable(currentLootMethod) then
+        tooltip:AddSeparator(8)
 
-    tipLine = tooltip:AddHeader(LOOT_THRESHOLD, "")
-    tooltip:SetCell(tipLine, 1, LOOT_THRESHOLD, nil, "CENTER", 2)
-    tooltip:SetColumnLayout(2, "CENTER", "CENTER")
-    tooltip:AddSeparator()
-    tooltip:AddLine("2", "4")
-    tipLine = tooltip:AddLine("3", "5")
-    local matrix = {
-        [2] = { tipLine - 1, 1 }, --2
-        [3] = { tipLine, 1 },     --3
-        [4] = { tipLine - 1, 2 }, --4
-        [5] = { tipLine, 2 }      --5
-    }
+        tipLine = tooltip:AddHeader(LOOT_THRESHOLD, "")
+        tooltip:SetCell(tipLine, 1, LOOT_THRESHOLD, nil, "CENTER", 2)
+        tooltip:SetColumnLayout(2, "CENTER", "CENTER")
+        tooltip:AddSeparator()
+        tooltip:AddLine("2", "4")
+        tipLine = tooltip:AddLine("3", "5")
+        local matrix = {
+            [2] = { tipLine - 1, 1 }, --2
+            [3] = { tipLine, 1 },     --3
+            [4] = { tipLine - 1, 2 }, --4
+            [5] = { tipLine, 2 }      --5
+        }
 
-    for qualityIndex, data in pairs(matrix) do
-        if data then
-            if currentLootThreshold == qualityIndex then
-                tooltip:SetCell(data[1], data[2],
-                    ">> " ..
-                    ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G
-                        ["ITEM_QUALITY" .. qualityIndex .. "_DESC"]) .. " <<")
-            else
-                tooltip:SetCell(data[1], data[2],
-                    ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G
-                        ["ITEM_QUALITY" .. qualityIndex .. "_DESC"]))
+        for qualityIndex, data in pairs(matrix) do
+            if data then
+                if currentLootThreshold == qualityIndex then
+                    tooltip:SetCell(data[1], data[2],
+                        ">> " ..
+                        ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G
+                            ["ITEM_QUALITY" .. qualityIndex .. "_DESC"]) .. " <<")
+                else
+                    tooltip:SetCell(data[1], data[2],
+                        ITEM_QUALITY_COLORS[qualityIndex].color:WrapTextInColorCode(_G
+                            ["ITEM_QUALITY" .. qualityIndex .. "_DESC"]))
+                end
+                tooltip:SetCellScript(data[1], data[2], "OnMouseUp", tooltip_SetLootThreshold, qualityIndex)
             end
-            tooltip:SetCellScript(data[1], data[2], "OnMouseUp", tooltip_SetLootThreshold, qualityIndex)
         end
     end
 
-
-    populateTooltip_Difficulties(tooltip)
     tooltip:AddSeparator(8)
 
     local currentLine = tooltip:AddLine(1)
@@ -253,19 +188,10 @@ local function populateTooltip_PartyMember(tooltip)
     tooltip:SetColumnLayout(2, "RIGHT", "LEFT")
     tooltip:SetColumnTextColor(1, GameFontNormalLeft:GetTextColor())
 
-    local currentDungeonDifficulty = GetDungeonDifficultyID()
-    if (currentDungeonDifficulty ~= nil) and (currentDungeonDifficulty ~= 0) then
-        tooltip:AddLine(DUNGEON_DIFFICULTY, RaidOrDungeonDifficultyLevel[GetDungeonDifficultyID()] or "??")
-    end
-    local currentRaidDifficulty = GetRaidDifficultyID()
-    if (currentRaidDifficulty ~= nil) and (currentRaidDifficulty ~= 0) then
-        tooltip:AddLine(RAID_DIFFICULTY, RaidOrDungeonDifficultyLevel[GetRaidDifficultyID()] or "¿¿")
-    end
-    tooltip:AddSeparator()
     --currentLootMethod, currentLootThreshold, currentMasterLooterName
     tooltip:AddLine(LOOT_METHOD, loot_method_strings[currentLootMethod] or "?")
     --if masterlooter - put the ML Name here
-    if (currentLootMethod == Enum.LootMethod.Masterlooter) and (currentMasterLooterName ~= "") then
+    if currentLootMethod == Enum.LootMethod.Masterlooter and currentMasterLooterName then
         local _, class = UnitClass(currentMasterLooterName)
         if class then
             tooltip:AddLine("Loot Master", RAID_CLASS_COLORS[class]:WrapTextInColorCode(currentMasterLooterName))
@@ -293,7 +219,6 @@ local function populateTooltip_Solo(tooltip)
         tooltip:SetCellScript(tipLine, 2, "OnMouseUp", tooltip_GhettoRaid)
         tooltip:AddSeparator(4)
 
-        populateTooltip_Difficulties(tooltip)
 
         --Instance Reset / Instructions
         local currentLine = tooltip:AddLine(RESET_INSTANCES, "(Shift Click alot)")
@@ -335,35 +260,24 @@ local function LootMethod_OnEnter(self)
     tooltip:SmartAnchorTo(self)
     tooltip:Show()
 end
-local fmt_shortInstanceDisplay = DARKYELLOW_FONT_COLOR:WrapTextInColorCode("[%s||%s]")
-local fmt_Loot_String = fmt_shortInstanceDisplay ..
-    " %s (%s)%s"     --[InstanceDifficulty-RaidDifficulty] Loot Method (LootThreshold) OptOutFlag
-local fmt_Loot_ML_String = fmt_shortInstanceDisplay ..
-    " %s: %s (%s)%s" --[InstanceDifficulty-RaidDifficulty] ML: MasterLooter_Name (LootThreshold) OptOutFlag
-
 local function get_LDB_Text(mlName, class)
     local loot_method = loot_method_strings_short[currentLootMethod] or "?"
     local loot_threshold = ITEM_QUALITY_COLORS[currentLootThreshold].color:WrapTextInColorCode(_G
         ["ITEM_QUALITY" .. currentLootThreshold .. "_DESC"]:sub(1, 1))
     local optOut = GetOptOutOfLoot() and "*" or ""
-    local dungeonDifficultyID = (GetDungeonDifficultyID() ~= 0 and GetDungeonDifficultyID()) or 1
-    local raidDifficultyID = (GetRaidDifficultyID() ~= 0 and GetRaidDifficultyID()) or 0
     if mlName then
         local masterLooterText = mlName
         if class and RAID_CLASS_COLORS[class] then
             masterLooterText = RAID_CLASS_COLORS[class]:WrapTextInColorCode(mlName)
         end
-        return fmt_Loot_ML_String:format(
-            RaidOrDungeonDifficultyShortName[dungeonDifficultyID] or "?",
-            RaidOrDungeonDifficultyShortName[raidDifficultyID] or "¿",
+        return string.format("%s: %s (%s)%s",
             loot_method,
             masterLooterText,
             loot_threshold,
             optOut
         )
     else
-        return fmt_Loot_String:format(RaidOrDungeonDifficultyShortName[dungeonDifficultyID] or "?",
-            RaidOrDungeonDifficultyShortName[raidDifficultyID] or "¿", loot_method, loot_threshold, optOut)
+        return string.format("%s (%s)%s", loot_method, loot_threshold, optOut)
     end
 end
 
@@ -389,14 +303,7 @@ eventFrame:RegisterEvent("INSTANCE_BOOT_STOP")
 eventFrame:SetScript(
     "OnEvent",
     function(self, event)
-        do
-            local lm = C_PartyInfo.GetLootMethod()
-            if type(lm) == "number" then
-                currentLootMethod = lm
-            else
-                currentLootMethod = Enum.LootMethod.Group
-            end
-        end
+        currentLootMethod = C_PartyInfo.GetLootMethod()
         currentLootThreshold = GetLootThreshold() or 2
 
         if event == "RightButton" then
@@ -438,7 +345,6 @@ ldbObject.OnClick = function(_, button)
     eventFrame:GetScript("OnEvent")(eventFrame, button)
 end
 eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-eventFrame:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
 eventFrame:Hide()
 
 local timeElapsed = 0

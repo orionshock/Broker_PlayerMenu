@@ -20,9 +20,7 @@ local function GetFormattedPVPTimer()
 end
 
 local function ldbPVPToggle_OnClick(_, button)
-    if button == "LeftButton" and IsShiftKeyDown() then
-        C_PvP.TogglePVP()
-    elseif not IsShiftKeyDown() then
+    if not IsShiftKeyDown() then
         eventFrame:GetScript("OnEvent")(eventFrame)
         return
     end
@@ -56,7 +54,7 @@ local function ldbPVPToggle_OnTooltipShow(tooltip)
     tooltip:AddDoubleLine("Flagged State:", flaggedState)
     tooltip:AddLine("")
     tooltip:AddLine("Click to Force Update")
-    tooltip:AddLine("Shift-Left Click to Toggle PvP")
+    tooltip:AddLine("Type /pvp in chat to toggle PvP")
     tooltip:AddLine("Shift-Right Click to Announce Timer")
 end
 
